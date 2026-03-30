@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Height Regression Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c1410;--card:#121e16;--card2:#172219;--bdr:#253028;--bdr2:#2f4035;--acc:#3d8b4d;--acc-h:#4da85f;--acc-bg:rgba(61,139,77,0.1);--tx:#c8dece;--txM:#6e9478;--txB:#e4f2e8;--tht:#52c46a;--mht:#dba63a;--dng:#cf5555;--dng-bg:rgba(207,85,85,0.1);--wrn-bg:rgba(219,166,58,0.08);--pulp:#c77dff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'JetBrains Mono','Fira Code','Source Code Pro',monospace;background:var(--bg);color:var(--tx);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+::selection{background:var(--acc-bg);color:var(--txB)}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}input{font-family:inherit;outline:none}
+.bp{padding:9px 18px;background:var(--acc);color:#fff;border-radius:5px;font-size:12px;font-weight:600}.bp:hover{background:var(--acc-h)}.bp:disabled{opacity:0.4;cursor:default}
+.bs{padding:9px 18px;background:var(--card);color:var(--tx);border:1px solid var(--bdr);border-radius:5px;font-size:12px;font-weight:500}.bs:hover{border-color:var(--bdr2)}
+.inp{background:var(--bg);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);padding:7px 10px;font-size:12px}.inp:focus{border-color:var(--acc)}
+table{border-collapse:collapse;width:100%}
+th{padding:8px 10px;text-align:left;font-weight:600;border-bottom:1px solid var(--bdr);color:var(--txM);font-size:10px;letter-spacing:0.05em;white-space:nowrap;position:sticky;top:0;background:var(--card);z-index:1}
+td{padding:6px 10px;border-bottom:1px solid rgba(37,48,40,0.5);white-space:nowrap;font-size:11px;font-variant-numeric:tabular-nums}
+tr.sel{background:var(--acc-bg)}tr:hover td{background:rgba(255,255,255,0.015)}
+.step{display:none}.step.active{display:flex}
+header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-items:center;gap:14;background:var(--card)}
+.dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:1px solid var(--bdr);color:var(--txM);cursor:pointer;transition:all 0.15s}
+.dot.active{background:var(--acc);border-color:var(--acc);color:#fff}.dot.done{background:var(--acc-bg)}.dot.disabled{opacity:0.4;cursor:default}
+.dot-line{width:20px;height:1px;background:var(--bdr)}
+.err-bar{padding:10px 24px;font-size:11px;border-bottom:1px solid var(--bdr)}.err-bar.warn{background:var(--wrn-bg);color:var(--mht)}.err-bar.err{background:var(--dng-bg);color:var(--dng)}
+.grp-card{margin-bottom:8px;background:var(--bg);border-radius:6px;border:1px solid var(--bdr);overflow:hidden}
+.grp-head{padding:8px 12px;display:flex;align-items:center;gap:8}
+.grp-item{padding:3px 12px 3px 42px;font-size:10px;color:var(--txM);display:flex;align-items:center;border-top:1px solid var(--bdr)}
+.grp-rm{cursor:pointer;color:var(--dng);font-size:12px;padding:0 4px;opacity:0.5}.grp-rm:hover{opacity:1}
+.chart-card{background:var(--card);border-radius:8px;padding:10px;border:1px solid var(--bdr)}
+.tab-btn{padding:10px 16px;font-size:10px;font-weight:600;background:transparent;color:var(--txM);border-bottom:2px solid transparent}.tab-btn.active{color:var(--txB);border-bottom-color:var(--acc)}
+.tag-tht{color:var(--tht)}.tag-mht{color:var(--mht)}.tag-dng{color:var(--dng)}.tag-acc{color:var(--acc)}.tag-pulp{color:var(--pulp)}
+.fw600{font-weight:600}.fw700{font-weight:700}
+.low-row{background:var(--dng-bg)}
+.excl-row{opacity:0.45;text-decoration:line-through}
+.pulp-flag{background:rgba(199,125,255,0.08)}
+.predicted-tht{color:var(--tht);font-weight:700}.predicted-mht{color:var(--mht);font-weight:700}
+.toggle-excl{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;vertical-align:middle}
+.toggle-excl.on{background:var(--dng);border-color:var(--dng);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M14 3L14 25M7 21L14 11L21 21" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="16" r="1.5" fill="var(--tht)" opacity=".7"/><circle cx="18" cy="14" r="1.5" fill="var(--mht)" opacity=".7"/></svg>
+  <div><div style="font-size:14px;font-weight:700;color:var(--txB)">HEIGHT REGRESSION TOOL</div><div style="font-size:9px;color:var(--txM);letter-spacing:0.08em;margin-top:1px">ln(Ht) = a + b &middot; (1/DBH) &middot; BY CROWNCODE</div></div>
+  <div style="flex:1"></div>
+  <div style="display:flex;gap:2px;align-items:center">
+    <div class="dot active" id="dot0" onclick="goStep(0)">1</div><div class="dot-line"></div>
+    <div class="dot disabled" id="dot1" onclick="goStep(1)">2</div><div class="dot-line"></div>
+    <div class="dot disabled" id="dot2" onclick="goStep(2)">3</div><div class="dot-line"></div>
+    <div class="dot disabled" id="dot3" onclick="goStep(3)">4</div><div class="dot-line"></div>
+    <div class="dot disabled" id="dot4" onclick="goStep(4)">5</div>
+  </div>
+</header>
+<div id="errBar" class="err-bar" style="display:none"><span id="errMsg"></span><span onclick="clearErr()" style="margin-left:12px;cursor:pointer;opacity:0.6">&times;</span></div>
+
+<!-- STEP 0: IMPORT -->
+<div class="step active" id="step0" style="align-items:center;justify-content:center;min-height:calc(100vh - 61px);padding:40px">
+  <div style="max-width:600px;width:100%;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px;opacity:0.12">&#9650;</div>
+    <div style="font-size:16px;font-weight:600;color:var(--txB);margin-bottom:6px">Import Tree Data</div>
+    <div style="font-size:12px;color:var(--txM);margin-bottom:24px;line-height:1.7">
+      Required: <span class="tag-tht">DBH</span>, <span class="tag-tht">TOTALHT</span>, <span style="color:var(--tx)">COVERNO</span><br>
+      Optional: <span class="tag-mht">MERCHHT</span>, PRODCODE, STNDDESC, YEARORIGIN, THINNED, <span class="tag-pulp">PULPHT</span>
+    </div>
+    <div style="display:flex;gap:0;margin-bottom:24px;border-radius:6px;overflow:hidden;border:1px solid var(--bdr);max-width:600px;margin:0 auto 24px">
+      <button class="bp" id="modeJ" onclick="setMode('j')" style="flex:1;border-radius:0;font-size:11px">0_Plot_Tree .xlsx</button>
+      <button class="bs" id="modeS" onclick="setMode('s')" style="flex:1;border-radius:0;font-size:11px;border:none">Separate .xlsx Files</button>
+      <button class="bs" id="modeP" onclick="setMode('p')" style="flex:1;border-radius:0;font-size:11px;border:none">Paste from Access</button>
+    </div>
+    <div id="impJ" style="background:var(--card);border-radius:8px;border:1px solid var(--bdr);padding:24px">
+      <button class="bp" onclick="document.getElementById('fJ').click()" style="padding:12px 28px">Choose .xlsx File</button>
+      <input type="file" id="fJ" accept=".xlsx,.xls,.csv" onchange="loadJoined(this)" style="display:none">
+    </div>
+    <div id="impS" style="display:none;background:var(--card);border-radius:8px;border:1px solid var(--bdr);padding:24px">
+      <div style="font-size:12px;color:var(--txM);margin-bottom:16px">Joins on SERIALNO.</div>
+      <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div style="flex:1;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px">PLOTS2</div><button class="bs" id="bP2" onclick="document.getElementById('fP2').click()" style="width:100%">Choose</button><input type="file" id="fP2" accept=".xlsx,.xls" onchange="loadP2(this)" style="display:none"></div>
+        <div style="flex:1;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px">TREES2</div><button class="bs" id="bT2" onclick="document.getElementById('fT2').click()" style="width:100%">Choose</button><input type="file" id="fT2" accept=".xlsx,.xls" onchange="loadT2(this)" style="display:none"></div>
+      </div>
+      <button class="bp" id="bJoin" onclick="joinTbls()" disabled style="padding:12px 28px">Join &amp; Continue</button>
+    </div>
+    <div id="impP" style="display:none;background:var(--card);border-radius:8px;border:1px solid var(--bdr);padding:24px">
+      <div style="font-size:12px;color:var(--txM);margin-bottom:12px;line-height:1.7;text-align:center">
+        Open each table in Access, <span style="color:var(--tx)">Ctrl+A</span> then <span style="color:var(--tx)">Ctrl+C</span>, and paste below.<br>
+        Joins: Stands2 &rarr; Plots2 (on TractNo+CompNo+StandNo) &rarr; Trees2 (on SerialNo)
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:6px">STANDS2</div>
+          <textarea id="pasteS2" placeholder="Paste Stands2 here..." style="width:100%;min-height:120px;background:var(--bg);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);padding:8px;font-size:10px;font-family:inherit;resize:vertical"></textarea>
+          <div style="font-size:9px;color:var(--txM);margin-top:4px" id="pasteS2ct"></div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:6px">PLOTS2</div>
+          <textarea id="pasteP2" placeholder="Paste Plots2 here..." style="width:100%;min-height:120px;background:var(--bg);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);padding:8px;font-size:10px;font-family:inherit;resize:vertical"></textarea>
+          <div style="font-size:9px;color:var(--txM);margin-top:4px" id="pasteP2ct"></div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:6px">TREES2</div>
+          <textarea id="pasteT2" placeholder="Paste Trees2 here..." style="width:100%;min-height:120px;background:var(--bg);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);padding:8px;font-size:10px;font-family:inherit;resize:vertical"></textarea>
+          <div style="font-size:9px;color:var(--txM);margin-top:4px" id="pasteT2ct"></div>
+        </div>
+      </div>
+      <div style="text-align:center"><button class="bp" onclick="pastJoin()" style="padding:12px 28px">Join &amp; Continue</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 1: GROUPING -->
+<div class="step" id="step1" style="min-height:calc(100vh - 61px)">
+  <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--bdr)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--bdr);background:var(--card);display:flex;align-items:center;gap:10">
+      <div style="font-size:10px;font-weight:600;color:var(--txM);letter-spacing:0.08em">UNASSIGNED (<span id="uCt">0</span>)</div>
+      <div style="flex:1"></div>
+      <div style="font-size:9px;color:var(--txM);margin-right:4px">Filter:</div>
+      <select class="inp" id="viewFilter" onchange="renderGrp()" style="width:auto;min-width:80px;padding:4px 6px;font-size:10px">
+        <option value="">All</option>
+      </select>
+      <div style="font-size:9px;color:var(--txM);margin:0 4px" id="tSum"></div>
+      <button class="bs" onclick="selAllU()" style="padding:4px 10px;font-size:9px" id="bSelAll">Select All</button>
+    </div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--card2);display:flex;gap:8px;align-items:center">
+      <select class="inp" id="existCC" style="width:auto;min-width:60px;padding:7px 6px" onchange="onExistCCChange()">
+        <option value="">New</option>
+      </select>
+      <div style="font-size:10px;color:var(--txM);white-space:nowrap" id="nCCWrap">Next: <span class="tag-acc fw700" style="font-size:13px" id="nCC">0</span></div>
+      <input class="inp" id="dInp" placeholder="Description..." style="flex:1" onkeydown="if(event.key==='Enter')assignCC()">
+      <button class="bp" onclick="assignCC()" id="bAssign" style="padding:7px 14px">Assign (0)</button>
+    </div>
+    <div style="padding:6px 16px;border-bottom:1px solid var(--bdr);background:var(--bg);display:flex;flex-wrap:wrap;gap:4px;align-items:center" id="filterBar">
+      <span style="font-size:9px;color:var(--txM);margin-right:4px">SELECT:</span>
+    </div>
+    <div style="flex:1;overflow:auto" id="uTblW"><table><thead id="uH"></thead><tbody id="uB"></tbody></table></div>
+  </div>
+  <div style="width:360px;display:flex;flex-direction:column;background:var(--card)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--bdr)"><div style="font-size:10px;font-weight:600;color:var(--txM);letter-spacing:0.08em">CROWNCODE GROUPS (<span id="gCt">0</span>)</div></div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--bdr);display:flex;gap:16px;align-items:center;background:var(--card2)">
+      <label style="font-size:10px;color:var(--txM);display:flex;align-items:center;gap:6px">Min THT:<input class="inp" type="number" id="iMT" value="30" min="3" max="200" style="width:48px;text-align:center;padding:4px 6px"></label>
+      <label style="font-size:10px;color:var(--txM);display:flex;align-items:center;gap:6px">Min MHT:<input class="inp" type="number" id="iMM" value="15" min="3" max="200" style="width:48px;text-align:center;padding:4px 6px"></label>
+    </div>
+    <div style="flex:1;overflow:auto;padding:8px" id="gList"></div>
+    <div style="padding:16px;border-top:1px solid var(--bdr)"><button class="bp" onclick="runRegs()" style="width:100%;padding:11px" id="bRun">Run Regressions</button></div>
+  </div>
+</div>
+
+<!-- STEP 2: REVIEW (QC flagged trees) -->
+<div class="step" id="step2" style="flex-direction:column;min-height:calc(100vh - 61px)">
+  <div style="padding:16px 24px;display:flex;align-items:center;gap:16;border-bottom:1px solid var(--bdr);background:var(--card)">
+    <div style="font-size:14px;font-weight:700;color:var(--txB)">Review Flagged Trees</div>
+    <div style="flex:1"></div>
+    <div style="font-size:10px;color:var(--txM)" id="qcSummary"></div>
+    <button class="bs" onclick="goStep(1)">Back to Grouping</button>
+    <button class="bp" onclick="proceedToReg()">Continue to Regressions</button>
+  </div>
+  <div style="flex:1;overflow:auto;padding:0" id="qcContent"></div>
+</div>
+
+<!-- STEP 3: REGRESSIONS -->
+<div class="step" id="step3" style="flex-direction:column;min-height:calc(100vh - 61px)">
+  <div style="padding:16px 24px;display:flex;align-items:center;gap:16;border-bottom:1px solid var(--bdr);background:var(--card)">
+    <div style="font-size:14px;font-weight:700;color:var(--txB)">Regression Results</div>
+    <div style="flex:1"></div>
+    <button class="bs" onclick="goStep(2)">Back to Review</button>
+    <button class="bp" onclick="applyPred()">Apply Predictions</button>
+  </div>
+  <div style="flex:1;overflow:auto;padding:24px" id="regC"></div>
+</div>
+
+<!-- STEP 4: RESULTS -->
+<div class="step" id="step4" style="flex-direction:column;height:calc(100vh - 61px)">
+  <div style="display:flex;align-items:center;border-bottom:1px solid var(--bdr);background:var(--card);padding:0 16px">
+    <button class="tab-btn active" id="tabD" onclick="setRT('data')">TREE DATA</button>
+    <button class="tab-btn" id="tabC" onclick="setRT('coef')">COEFFICIENTS</button>
+    <button class="tab-btn" id="tabCh" onclick="setRT('charts')">CHARTS</button>
+    <div style="flex:1"></div>
+    <div style="font-size:10px;color:var(--txM);margin-right:12px" id="pSum"></div>
+    <button class="bs" onclick="goStep(1)" style="padding:6px 12px;font-size:10px;margin-right:6px">Edit Groups</button>
+    <button class="bs" onclick="expCoef()" style="padding:6px 12px;font-size:10px;margin-right:6px">Export Coefficients</button>
+    <button class="bs" onclick="expTrees2()" style="padding:6px 12px;font-size:10px;margin-right:6px">Export Trees2</button>
+    <button class="bs" onclick="expCharts()" style="padding:6px 12px;font-size:10px;margin-right:6px">Export Charts</button>
+    <button class="bp" onclick="expAll()" style="padding:6px 12px;font-size:10px">Export HtRegression.xlsx</button>
+  </div>
+  <div style="flex:1;overflow:auto" id="resC"></div>
+</div>
+<script>
+// ═══════════════════════ STATE ═══════════════════════
+let rows=[],combos=[],groups={},sel=new Set(),thtR={},mhtR={},applied=false,curStep=0;
+let s2d=null,p2d=null,t2d=null,origT2=null;
+let excluded=new Set(); // Set of row indices excluded from regression
+const CC="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+// ═══════════════════════ HELPERS ═══════════════════════
+const norm=o=>{const r={};Object.entries(o).forEach(([k,v])=>{r[k.toUpperCase().replace(/[\s_]+/g,"").trim()]=v;});return r;};
+const val=(r,...k)=>{for(const x of k){const v=r[x];if(v!==undefined&&v!==null&&String(v).trim()!=="")return String(v).trim();}return"";};
+const ck=r=>`${val(r,"COVERNO","SPECIES")}|||${val(r,"STNDDESC","FWDESC","STDDESC","STANDDESC")}|||${val(r,"YEARORIGIN")}`;
+const isP=c=>String(c||"").padStart(4,"0").startsWith("01");
+const isNP=d=>/^N[BU]|NATURAL|-N\b|^N-/i.test(String(d||""));
+const hwG=c=>{const s=String(c||"").padStart(4,"0");if(s.startsWith("01"))return null;if(s.startsWith("03"))return"3"+s[2]+"0s";if(s.startsWith("04"))return"4"+s[2]+"0s";if(s.startsWith("05"))return"5"+s[2]+"0s";if(s.startsWith("06"))return"6"+s[2]+"0s";if(s.startsWith("07"))return"7"+s[2]+"0s";if(s.startsWith("08"))return"8"+s[2]+"0s";return"Other";};
+const uCC=()=>new Set(Object.values(groups).map(g=>g.cc));
+const nCC=()=>{const u=uCC();for(const c of CC)if(!u.has(c))return c;return"?";};
+const mt=()=>parseInt(document.getElementById("iMT").value)||30;
+const mm=()=>parseInt(document.getElementById("iMM").value)||15;
+function sErr(m,w){const b=document.getElementById("errBar");b.style.display="block";b.className="err-bar "+(w?"warn":"err");document.getElementById("errMsg").textContent=m;}
+function clearErr(){document.getElementById("errBar").style.display="none";}
+
+// ═══════════════════════ QC FLAGS ═══════════════════════
+function getPulpFlag(r){
+  const tht=parseFloat(r.TOTALHT),pht=parseFloat(r.PULPHT||r.PHT||0);
+  if(tht>0&&pht>0){
+    const diff=tht-pht;
+    if(diff<=10&&pht>0)return{flag:true,diff:diff.toFixed(1)};
+  }
+  return{flag:false,diff:""};
+}
+function getMhtFlag(r){
+  const tht=parseFloat(r.TOTALHT),mht=parseFloat(r.MERCHHT);
+  return(mht>0&&tht>0&&mht>tht);
+}
+
+// ═══════════════════════ REGRESSION ═══════════════════════
+function runReg(pairs){
+  const d=pairs.filter(p=>p.dbh>0&&p.ht>0).map(p=>({x:1/p.dbh,y:Math.log(p.ht)}));
+  if(d.length<3)return null;
+  const n=d.length;
+  const sx=d.reduce((s,p)=>s+p.x,0),sy=d.reduce((s,p)=>s+p.y,0);
+  const sxy=d.reduce((s,p)=>s+p.x*p.y,0),sx2=d.reduce((s,p)=>s+p.x*p.x,0);
+  const den=n*sx2-sx*sx;if(Math.abs(den)<1e-12)return null;
+  const b=(n*sxy-sx*sy)/den,a=(sy-b*sx)/n;
+  const ym=sy/n,xm=sx/n;
+  const ssTot=d.reduce((s,p)=>s+(p.y-ym)**2,0);
+  const ssRes=d.reduce((s,p)=>s+(p.y-(a+b*p.x))**2,0);
+  const r2=ssTot>0?1-ssRes/ssTot:0;
+  const mse=ssRes/Math.max(n-2,1);const se=Math.sqrt(mse);
+  const seA=Math.sqrt(mse*(sx2/(n*den||1)));const seB=Math.sqrt(mse*(n/(den||1)));
+  const tA=seA>0?a/seA:0,tB=seB>0?b/seB:0;
+  const sdX=Math.sqrt(d.reduce((s,p)=>s+(p.x-xm)**2,0)/Math.max(n-1,1));
+  const sdY=Math.sqrt(ssTot/Math.max(n-1,1));
+  const beta=(sdY>0&&sdX>0)?b*sdX/sdY:0;
+  return{a,b,r2,se,n,seA,seB,tA,tB,beta};
+}
+function predict(reg,dbh){return(reg&&dbh>0)?Math.exp(reg.a+reg.b/dbh):0;}
+
+// ═══════════════════════ NAV ═══════════════════════
+function goStep(s){
+  const canGo=[true,rows.length>0,rows.length>0&&Object.keys(groups).length>0,Object.keys(thtR).length>0,applied];
+  if(!canGo[s])return;
+  curStep=s;
+  for(let i=0;i<5;i++){
+    document.getElementById("step"+i).classList.toggle("active",i===s);
+    const d=document.getElementById("dot"+i);
+    d.classList.remove("active","done","disabled");
+    if(i===s)d.classList.add("active");else if(i<s)d.classList.add("done");else if(!canGo[i])d.classList.add("disabled");
+  }
+}
+
+// ═══════════════════════ IMPORT ═══════════════════════
+function setMode(m){
+  document.getElementById("impJ").style.display=m==="j"?"block":"none";
+  document.getElementById("impS").style.display=m==="s"?"block":"none";
+  document.getElementById("impP").style.display=m==="p"?"block":"none";
+  document.getElementById("modeJ").className=m==="j"?"bp":"bs";
+  document.getElementById("modeS").className=m==="s"?"bp":"bs";
+  document.getElementById("modeP").className=m==="p"?"bp":"bs";
+  [document.getElementById("modeJ"),document.getElementById("modeS"),document.getElementById("modeP")].forEach(b=>{b.style.borderRadius="0";b.style.border="none";});
+}
+function rdXl(buf){return XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(buf),{type:"array"}).Sheets[XLSX.read(new Uint8Array(buf),{type:"array"}).SheetNames[0]],{defval:""}).map(norm);}
+function initData(data){
+  if(!data.length){sErr("No rows.");return false;}
+  const k=Object.keys(data[0]);
+  if(!k.includes("DBH")){sErr("Missing DBH.");return false;}
+  if(!k.includes("TOTALHT")){sErr("Missing TOTALHT.");return false;}
+  if(!k.includes("COVERNO")&&!k.includes("SPECIES")){sErr("Need COVERNO or SPECIES.");return false;}
+  rows=data;groups={};sel=new Set();thtR={};mhtR={};applied=false;excluded=new Set();
+  buildCombos();goStep(1);return true;
+}
+function loadJoined(inp){const f=inp.files?.[0];if(!f)return;clearErr();const r=new FileReader();r.onload=e=>{try{initData(rdXl(e.target.result));}catch(e){sErr("Read error: "+e.message);}};r.readAsArrayBuffer(f);}
+function loadP2(inp){const f=inp.files?.[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{p2d=rdXl(e.target.result);document.getElementById("bP2").textContent=p2d.length+" rows";chkJ();}catch(e){sErr("Plots2: "+e.message);}};r.readAsArrayBuffer(f);}
+function loadT2(inp){const f=inp.files?.[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{t2d=rdXl(e.target.result);document.getElementById("bT2").textContent=t2d.length+" rows";chkJ();}catch(e){sErr("Trees2: "+e.message);}};r.readAsArrayBuffer(f);}
+function loadS2(inp){const f=inp.files?.[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{s2d=rdXl(e.target.result);document.getElementById("bS2").textContent=s2d.length+" rows";chkJ();}catch(e){sErr("Stands2: "+e.message);}};r.readAsArrayBuffer(f);}
+function chkJ(){document.getElementById("bJoin").disabled=!(s2d&&p2d&&t2d);}
+function standKey(r){return String(r.TRACTNO||"").trim()+"|"+String(r.COMPNO||"").trim()+"|"+String(r.STANDNO||"").trim();}
+function joinTbls(){
+  if(!s2d||!p2d||!t2d)return;clearErr();
+  origT2=t2d.map(r=>({...r}));
+  // Stands2 lookup by TractNo+CompNo+StandNo
+  const sm={};s2d.forEach(s=>{const k=standKey(s);sm[k]=s;});
+  // Join Stands2 into Plots2
+  let smiss=0;
+  const plots=p2d.map(p=>{const k=standKey(p);const s=sm[k];if(!s){smiss++;return{...p};}return{...s,...p};});
+  // Plots lookup by SerialNo
+  const pm={};plots.forEach(p=>{const sn=String(p.SERIALNO||p.SERIAL||"").trim();if(sn)pm[sn]=p;});
+  // Join into Trees2
+  const j=[];let tmiss=0;
+  t2d.forEach(t=>{const sn=String(t.SERIALNO||t.SERIAL||"").trim();const p=pm[sn];if(!p){tmiss++;return;}j.push({...p,...t});});
+  if(!j.length){sErr("Join: 0 rows. "+tmiss+" trees unmatched.");return;}
+  const warnings=[];
+  if(smiss>0)warnings.push(smiss+" plots had no matching stand");
+  if(tmiss>0)warnings.push(tmiss+" trees had no matching plot");
+  if(warnings.length)sErr("Joined "+j.length+" rows. "+warnings.join(", ")+".",true);
+  initData(j);
+}
+function parseTSV(text){
+  const lines=text.trim().split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const hdrs=lines[0].split(/\t/);
+  return lines.slice(1).map(line=>{
+    const vals=line.split(/\t/);
+    const row={};
+    hdrs.forEach((h,i)=>{row[h.trim().toUpperCase().replace(/[\s_]+/g,"")]=((vals[i]||"").trim());});
+    return row;
+  });
+}
+function pastJoin(){
+  clearErr();
+  const s2txt=document.getElementById("pasteS2").value;
+  const p2txt=document.getElementById("pasteP2").value;
+  const t2txt=document.getElementById("pasteT2").value;
+  if(!s2txt.trim()||!p2txt.trim()||!t2txt.trim()){sErr("Paste all three tables: Stands2, Plots2, and Trees2.");return;}
+  const s2=parseTSV(s2txt);
+  const p2=parseTSV(p2txt);
+  const t2=parseTSV(t2txt);
+  origT2=t2.map(r=>({...r}));
+  if(!s2.length){sErr("Stands2: no data rows. Check headers in first row.");return;}
+  if(!p2.length){sErr("Plots2: no data rows. Check headers in first row.");return;}
+  if(!t2.length){sErr("Trees2: no data rows. Check headers in first row.");return;}
+  document.getElementById("pasteS2ct").textContent=s2.length+" rows parsed";
+  document.getElementById("pasteP2ct").textContent=p2.length+" rows parsed";
+  document.getElementById("pasteT2ct").textContent=t2.length+" rows parsed";
+  // Stands2 lookup by TractNo+CompNo+StandNo
+  function stKey(r){return String(r.TRACTNO||"").trim()+"|"+String(r.COMPNO||"").trim()+"|"+String(r.STANDNO||"").trim();}
+  const sm={};s2.forEach(s=>{const k=stKey(s);sm[k]=s;});
+  // Join Stands2 into Plots2
+  let smiss=0;
+  const plots=p2.map(p=>{const k=stKey(p);const s=sm[k];if(!s){smiss++;return{...p};}return{...s,...p};});
+  // Plots lookup by SerialNo
+  const pm={};plots.forEach(p=>{const sn=String(p.SERIALNO||p.SERIAL||"").trim();if(sn)pm[sn]=p;});
+  // Join into Trees2
+  const j=[];let tmiss=0;
+  t2.forEach(t=>{const sn=String(t.SERIALNO||t.SERIAL||"").trim();const p=pm[sn];if(!p){tmiss++;return;}j.push({...p,...t});});
+  if(!j.length){sErr("Join produced 0 rows. Check that SerialNo exists in Plots2 and Trees2, and TractNo+CompNo+StandNo match between Stands2 and Plots2.");return;}
+  const warnings=[];
+  if(smiss>0)warnings.push(smiss+" plots had no matching stand");
+  if(tmiss>0)warnings.push(tmiss+" trees had no matching plot");
+  if(warnings.length)sErr("Joined "+j.length+" rows. "+warnings.join(", ")+".",true);
+  else sErr("Joined "+j.length+" rows successfully.",true);
+  initData(j);
+}
+// ═══════════════════════ GROUPING ═══════════════════════
+function matchFilter(c,f){
+  if(f==="PLANTED")return c.pine&&!c.nat;
+  if(f==="NAT PINE")return c.pine&&c.nat;
+  return(c.hw||"")===f;
+}
+function buildCombos(){
+  const map={};
+  rows.forEach(r=>{
+    if(skipFromGroup(r))return;
+    const key=ck(r);
+    if(!map[key]){
+      const cover=val(r,"COVERNO","SPECIES"),desc=val(r,"STNDDESC","FWDESC","STDDESC","STANDDESC"),yr=val(r,"YEARORIGIN");
+      const th=(String(r.THINNED||"").trim()==="1"||(r.THINYEAR1&&String(r.THINYEAR1).trim()!=="0"))?"TH":"";
+      map[key]={cover,desc,yr,key,total:0,tht:0,mht:0,pine:isP(cover),nat:isNP(desc),hw:!isP(cover)?hwG(cover):null,th};
+    }
+    map[key].total++;
+    if(parseFloat(r.DBH)>0&&parseFloat(r.TOTALHT)>0)map[key].tht++;
+    if(parseFloat(r.DBH)>0&&parseFloat(r.MERCHHT)>0&&String(r.PRODCODE||"").trim()==="3")map[key].mht++;
+  });
+  const coverOrder=c=>{const s=String(c||"").padStart(4,"0");if(s.startsWith("01"))return 1;if(s.startsWith("03"))return 3;if(s.startsWith("04"))return 4;if(s.startsWith("05"))return 5;if(s.startsWith("06"))return 6;if(s.startsWith("07"))return 7;if(s.startsWith("08"))return 8;return 9;};
+  combos=Object.values(map).sort((a,b)=>{
+    // Planted pines first
+    if(a.pine&&!a.nat&&!(b.pine&&!b.nat))return-1;
+    if(!(a.pine&&!a.nat)&&b.pine&&!b.nat)return 1;
+    // Planted pines: by cover then year desc
+    if(a.pine&&!a.nat&&b.pine&&!b.nat){if(a.cover!==b.cover)return a.cover.localeCompare(b.cover);return(b.yr||"").localeCompare(a.yr||"");}
+    // Natural pines next
+    if(a.pine&&a.nat&&!(b.pine&&b.nat))return-1;
+    if(!(a.pine&&a.nat)&&b.pine&&b.nat)return 1;
+    if(a.pine&&a.nat&&b.pine&&b.nat){if(a.cover!==b.cover)return a.cover.localeCompare(b.cover);return(b.yr||"").localeCompare(a.yr||"");}
+    // Then by cover series: 300s, 400s, 500s, 600s, 700s
+    const oa=coverOrder(a.cover),ob=coverOrder(b.cover);
+    if(oa!==ob)return oa-ob;
+    // Within same series, sort by hw group then cover
+    if((a.hw||"")!==(b.hw||""))return(a.hw||"").localeCompare(b.hw||"");
+    return a.cover.localeCompare(b.cover);
+  });
+  renderGrp();
+}
+function autoDesc(){
+  if(sel.size===0)return"";
+  const sc=combos.filter(c=>sel.has(c.key)&&!groups[c.key]);if(!sc.length)return"";
+  const c0=sc[0];
+  if(c0.pine&&!c0.nat){
+    const yrs=[...new Set(sc.map(c=>c.yr).filter(Boolean))].sort();
+    const hasTH=sc.some(c=>c.th==="TH");
+    return"P"+c0.cover+"-"+(yrs.length?yrs.join(" & "):"")+(hasTH?"TH":"");
+  }
+  if(c0.pine&&c0.nat)return"N"+[...new Set(sc.map(c=>c.cover))].join(", ");
+  return c0.hw||"";
+}
+function renderGrp(){
+  const un=combos.filter(c=>!groups[c.key]);const _mt=mt(),_mm=mm();
+  document.getElementById("uCt").textContent=un.length;
+  document.getElementById("tSum").textContent=rows.length+" trees \u00b7 "+combos.length+" combos";
+  document.getElementById("nCC").textContent=nCC();
+  document.getElementById("dInp").placeholder=autoDesc()||"Description...";
+  document.getElementById("bAssign").textContent="Assign ("+sel.size+")";
+  document.getElementById("bAssign").disabled=sel.size===0;
+  // Build filter options
+  const filterVal=document.getElementById("viewFilter").value;
+  const filterGroups=new Set();
+  un.forEach(c=>{
+    if(c.pine&&!c.nat)filterGroups.add("PLANTED");
+    else if(c.pine&&c.nat)filterGroups.add("NAT PINE");
+    else if(c.hw)filterGroups.add(c.hw);
+    // Also add species-level filter for pines
+    if(c.pine)filterGroups.add(c.cover);
+  });
+  const fdd=document.getElementById("viewFilter");
+  const curFilt=fdd.value;
+  let fhtml='<option value="">All ('+un.length+')</option>';
+  fhtml+='<optgroup label="Type">';
+  ["PLANTED","NAT PINE",...[...filterGroups].filter(g=>g!=="PLANTED"&&g!=="NAT PINE"&&g.match(/\d+s$/)).sort()].forEach(g=>{
+    if(!filterGroups.has(g))return;
+    const cnt=un.filter(c=>{return matchFilter(c,g);}).length;
+    fhtml+=`<option value="${g}"${curFilt===g?" selected":""}>${g} (${cnt})</option>`;
+  });
+  fhtml+='</optgroup>';
+  // Pine species
+  const pineCovers=[...new Set(un.filter(c=>c.pine).map(c=>c.cover))].sort();
+  if(pineCovers.length>1){
+    fhtml+='<optgroup label="Pine Species">';
+    pineCovers.forEach(cv=>{
+      const cnt=un.filter(c=>c.cover===cv).length;
+      fhtml+=`<option value="cv:${cv}"${curFilt==="cv:"+cv?" selected":""}>${cv} (${cnt})</option>`;
+    });
+    fhtml+='</optgroup>';
+  }
+  fdd.innerHTML=fhtml;
+
+  // Filter visible rows
+  const visible=filterVal?un.filter(c=>{
+    if(filterVal.startsWith("cv:"))return c.cover===filterVal.slice(3);
+    return matchFilter(c,filterVal);
+  }):un;
+
+  // Unassigned table
+  document.getElementById("uH").innerHTML='<tr><th style="width:32px;text-align:center"></th><th>COVERNO</th><th>STNDDESC</th><th>YEAR</th><th>TH</th><th style="text-align:right">TREES</th><th style="text-align:right;color:var(--tht)">THT</th><th style="text-align:right;color:var(--mht)">MHT</th><th>TYPE</th></tr>';
+  let b="";
+  visible.forEach(c=>{
+    const s=sel.has(c.key);const tc=c.tht>=_mt?"var(--tht)":(c.tht>0?"var(--mht)":"var(--txM)");const mc=c.mht>=_mm?"var(--mht)":"var(--txM)";
+    b+=`<tr class="${s?"sel":""}" onclick="togC('${c.key.replace(/'/g,"\\'")}')" style="cursor:pointer">
+      <td style="text-align:center"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${s?"var(--acc)":"var(--bdr)"};background:${s?"var(--acc)":"transparent"};display:inline-flex;align-items:center;justify-content:center">${s?'<span style="color:#fff;font-size:9px">&#10003;</span>':""}</div></td>
+      <td style="font-weight:500;color:var(--txB)">${c.cover}</td><td>${c.desc}</td><td>${c.yr}</td>
+      <td style="font-size:9px;color:${c.th?"var(--mht)":"var(--txM)"}">${c.th}</td>
+      <td style="text-align:right">${c.total}</td><td style="text-align:right;color:${tc}">${c.tht}</td><td style="text-align:right;color:${mc}">${c.mht}</td>
+      <td style="font-size:9px;color:var(--txM)">${c.pine?(c.nat?"NAT":"PLANTED"):(c.hw||"HW")}</td></tr>`;
+  });
+  document.getElementById("uB").innerHTML=b;
+  renderFilterBar();
+  // Groups
+  const cs={};combos.forEach(c=>{const g=groups[c.key];if(!g)return;const cc=g.cc;if(!cs[cc])cs[cc]={tht:0,mht:0,trees:0,combos:[],desc:g.desc};cs[cc].tht+=c.tht;cs[cc].mht+=c.mht;cs[cc].trees+=c.total;cs[cc].combos.push(c);});
+  const sk=Object.keys(cs).sort((a,b)=>CC.indexOf(a)-CC.indexOf(b));
+  document.getElementById("gCt").textContent=sk.length;
+  document.getElementById("bRun").disabled=sk.length===0;
+  if(!sk.length){document.getElementById("gList").innerHTML='<div style="padding:32px;text-align:center;color:var(--txM);font-size:11px;line-height:1.7">Select combos, then Assign.<br>CrownCodes: 0,1,...9,A,B,...Z</div>';updateExistDropdown();return;}
+  let gl="";
+  sk.forEach(cc=>{const st=cs[cc];
+    gl+=`<div class="grp-card"><div class="grp-head"><div style="font-size:14px;font-weight:700;color:var(--acc);width:20px">${cc}</div><div style="font-size:11px;font-weight:600;color:var(--txB);flex:1">${st.desc}</div><div style="font-size:10px;color:${st.tht>=_mt?"var(--tht)":"var(--dng)"};font-weight:600">THT:${st.tht}</div><div style="font-size:10px;color:${st.mht>=_mm?"var(--mht)":"var(--txM)"}">MHT:${st.mht}</div></div>`;
+    st.combos.forEach(c=>{gl+=`<div class="grp-item"><span style="flex:1">${c.cover} \u00b7 ${c.desc||"(none)"} ${c.yr?"\u00b7 "+c.yr:""} ${c.th?"\u00b7 "+c.th:""}</span><span style="margin-right:8px;font-size:9px">${c.tht}t/${c.mht}m</span><span class="grp-rm" onclick="event.stopPropagation();unC('${c.key.replace(/'/g,"\\'")}')">&times;</span></div>`;});
+    gl+='</div>';
+  });
+  document.getElementById("gList").innerHTML=gl;
+  updateExistDropdown();
+}
+function togC(k){if(sel.has(k))sel.delete(k);else sel.add(k);renderGrp();}
+function selAllU(){
+  const un=combos.filter(c=>!groups[c.key]);
+  const fv=document.getElementById("viewFilter").value;
+  const visible=fv?un.filter(c=>{if(fv.startsWith("cv:"))return c.cover===fv.slice(3);return matchFilter(c,fv);}):un;
+  const allSel=visible.every(c=>sel.has(c.key));
+  if(allSel){visible.forEach(c=>sel.delete(c.key));}
+  else{visible.forEach(c=>sel.add(c.key));}
+  renderGrp();
+}
+function selByType(type){
+  const un=combos.filter(c=>!groups[c.key]);
+  const matching=un.filter(c=>{
+    if(type==="PLANTED")return c.pine&&!c.nat;
+    if(type==="NAT")return c.pine&&c.nat;
+    return(c.hw||"")=== type;
+  });
+  // If all matching are already selected, deselect them. Otherwise select them.
+  const allSel=matching.every(c=>sel.has(c.key));
+  if(allSel){matching.forEach(c=>sel.delete(c.key));}
+  else{matching.forEach(c=>sel.add(c.key));}
+  renderGrp();
+}
+function selByCover(cover){
+  const un=combos.filter(c=>!groups[c.key]&&c.cover===cover);
+  const allSel=un.every(c=>sel.has(c.key));
+  if(allSel){un.forEach(c=>sel.delete(c.key));}
+  else{un.forEach(c=>sel.add(c.key));}
+  renderGrp();
+}
+function renderFilterBar(){
+  const un=combos.filter(c=>!groups[c.key]);
+  if(!un.length){document.getElementById("filterBar").innerHTML='<span style="font-size:9px;color:var(--txM)">All assigned</span>';return;}
+  // Build unique type groups and cover groups
+  const types=new Set();const covers=new Set();
+  un.forEach(c=>{
+    if(c.pine&&!c.nat)types.add("PLANTED");
+    else if(c.pine&&c.nat)types.add("NAT");
+    else if(c.hw)types.add(c.hw);
+    covers.add(c.cover);
+  });
+  let html='<span style="font-size:9px;color:var(--txM);margin-right:4px">GROUP:</span>';
+  // Type buttons
+  [...types].sort().forEach(t=>{
+    const matching=un.filter(c=>{
+      if(t==="PLANTED")return c.pine&&!c.nat;
+      if(t==="NAT")return c.pine&&c.nat;
+      return(c.hw||"")===t;
+    });
+    const cnt=matching.length;
+    const thtSum=matching.reduce((s,c)=>s+c.tht,0);
+    const allSel=matching.every(c=>sel.has(c.key));
+    html+=`<button onclick="selByType('${t}')" style="padding:3px 8px;font-size:9px;font-weight:600;border-radius:3px;border:1px solid ${allSel?"var(--acc)":"var(--bdr)"};background:${allSel?"var(--acc-bg)":"transparent"};color:${allSel?"var(--acc)":"var(--txM)"};cursor:pointer;font-family:inherit">${t} <span style="opacity:0.6">${cnt}</span></button>`;
+  });
+  // Separator + cover buttons for species-level selection
+  if(covers.size>1&&covers.size<=40){
+    html+='<span style="width:1px;height:14px;background:var(--bdr);margin:0 4px"></span>';
+    html+='<span style="font-size:9px;color:var(--txM);margin-right:4px">SPECIES:</span>';
+    [...covers].sort().forEach(cv=>{
+      const matching=un.filter(c=>c.cover===cv);
+      const allSel=matching.every(c=>sel.has(c.key));
+      if(matching.length>1){
+        html+=`<button onclick="selByCover('${cv}')" style="padding:3px 6px;font-size:8px;font-weight:500;border-radius:3px;border:1px solid ${allSel?"var(--acc)":"var(--bdr)"};background:${allSel?"var(--acc-bg)":"transparent"};color:${allSel?"var(--acc)":"var(--txM)"};cursor:pointer;font-family:inherit">${cv}</button>`;
+      }
+    });
+  }
+  document.getElementById("filterBar").innerHTML=html;
+}
+function onExistCCChange(){
+  const v=document.getElementById("existCC").value;
+  const wrap=document.getElementById("nCCWrap");
+  const dInp=document.getElementById("dInp");
+  if(v){
+    wrap.style.display="none";
+    // Find the description for this CC
+    const desc=Object.values(groups).find(g=>g.cc===v);
+    dInp.value=desc?desc.desc:"";
+    dInp.disabled=true;
+    dInp.style.opacity="0.5";
+  }else{
+    wrap.style.display="";
+    dInp.value="";
+    dInp.disabled=false;
+    dInp.style.opacity="1";
+    dInp.placeholder=autoDesc()||"Description...";
+  }
+}
+function updateExistDropdown(){
+  const dd=document.getElementById("existCC");
+  const curVal=dd.value;
+  const usedMap={};
+  Object.values(groups).forEach(g=>{usedMap[g.cc]=g.desc;});
+  const sorted=Object.keys(usedMap).sort((a,b)=>CC.indexOf(a)-CC.indexOf(b));
+  let html='<option value="">+ New group</option>';
+  sorted.forEach(cc=>{html+=`<option value="${cc}"${curVal===cc?" selected":""}>${cc} - ${usedMap[cc]}</option>`;});
+  dd.innerHTML=html;
+}
+function assignCC(){
+  if(sel.size===0)return;
+  const existVal=document.getElementById("existCC").value;
+  let cc,desc;
+  if(existVal){
+    // Add to existing group
+    cc=existVal;
+    const existing=Object.values(groups).find(g=>g.cc===existVal);
+    desc=existing?existing.desc:existVal;
+  }else{
+    // New group
+    cc=nCC();
+    desc=document.getElementById("dInp").value.trim()||autoDesc()||cc;
+  }
+  sel.forEach(k=>{if(!groups[k])groups[k]={cc,desc};});
+  sel=new Set();
+  document.getElementById("dInp").value="";
+  document.getElementById("dInp").disabled=false;
+  document.getElementById("dInp").style.opacity="1";
+  document.getElementById("existCC").value="";
+  document.getElementById("nCCWrap").style.display="";
+  renderGrp();
+}
+function unC(k){delete groups[k];renderGrp();}
+function bRC(){const m={};rows.forEach((r,i)=>{const k=ck(r);if(groups[k])m[i]=groups[k].cc;});return m;}
+function sMap(){const m={};Object.values(groups).forEach(g=>{m[g.cc]=g.desc;});return m;}
+
+// ═══════════════════════ STEP 2: QC REVIEW ═══════════════════════
+function runRegs(){
+  clearErr();
+  const ccs=[...new Set(Object.values(groups).map(g=>g.cc))];
+  if(!ccs.length){sErr("No groups.");return;}
+  // Scan for QC issues before running
+  excluded=new Set();
+  renderQC();
+  goStep(2);
+}
+function renderQC(){
+  const rc=bRC();const sm=sMap();
+  // Find flagged trees
+  let pulpFlags=0,mhtFlags=0;
+  const flagged=[];
+  rows.forEach((r,i)=>{
+    if(!rc[i])return;
+    const pf=getPulpFlag(r);const mf=getMhtFlag(r);
+    if(pf.flag||mf){
+      flagged.push({idx:i,r,cc:rc[i],pf,mf});
+      if(pf.flag)pulpFlags++;
+      if(mf){mhtFlags++;excluded.add(i);} // Auto-exclude MHT>THT
+    }
+  });
+  document.getElementById("qcSummary").innerHTML=`<span class="tag-pulp">${pulpFlags} PulpHt\u2248TotalHt</span> &middot; <span class="tag-dng">${mhtFlags} MerchHt>TotalHt (auto-excluded)</span> &middot; <span style="color:var(--tx)">${excluded.size} total excluded</span>`;
+  
+  if(!flagged.length){
+    document.getElementById("qcContent").innerHTML='<div style="padding:40px;text-align:center;color:var(--txM);font-size:13px">No QC issues found. Click Continue to proceed.</div>';
+    return;
+  }
+  let html='<div style="padding:16px 24px 8px;font-size:11px;color:var(--txM);line-height:1.6"><span class="tag-pulp">\u25cf Purple</span> = PulpHt within 10ft of TotalHt (may pull regression). Click the <span class="tag-dng">X</span> toggle to exclude from regression.<br><span class="tag-dng">\u25cf Red</span> = MerchHt > TotalHt (auto-excluded from MHT regression).</div>';
+  html+='<table style="font-size:10px"><thead><tr><th style="width:40px">EXCL</th><th>CC</th><th>Desc</th><th>COVERNO</th><th>DBH</th><th style="color:var(--tht)">TOTALHT</th><th style="color:var(--pulp)">PULPHT</th><th style="color:var(--pulp)">DIFF</th><th style="color:var(--mht)">MERCHHT</th><th>FLAG</th></tr></thead><tbody>';
+  flagged.forEach(f=>{
+    const isExcl=excluded.has(f.idx);
+    const rowCls=f.mf?"low-row":(f.pf.flag?"pulp-flag":"");
+    html+=`<tr class="${rowCls} ${isExcl?"excl-row":""}">
+      <td style="text-align:center"><div class="toggle-excl ${isExcl?"on":""}" onclick="togExcl(${f.idx})">${isExcl?"X":""}</div></td>
+      <td class="fw700 tag-acc">${f.cc}</td><td>${sm[f.cc]||""}</td>
+      <td>${val(f.r,"COVERNO","SPECIES")}</td><td>${f.r.DBH}</td>
+      <td class="tag-tht">${f.r.TOTALHT}</td>
+      <td class="tag-pulp">${f.r.PULPHT||f.r.PHT||""}</td>
+      <td class="tag-pulp">${f.pf.diff}</td>
+      <td style="color:${f.mf?"var(--dng)":"var(--mht)"}">${f.r.MERCHHT}</td>
+      <td style="font-size:9px">${f.pf.flag?'<span class="tag-pulp">PULP\u2248THT</span> ':""}${f.mf?'<span class="tag-dng">MHT>THT</span>':""}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById("qcContent").innerHTML=html;
+}
+function togExcl(idx){
+  if(excluded.has(idx))excluded.delete(idx);else excluded.add(idx);
+  renderQC();
+}
+
+// ═══════════════════════ PROCEED TO REGRESSIONS ═══════════════════════
+function proceedToReg(){
+  clearErr();
+  const ccs=[...new Set(Object.values(groups).map(g=>g.cc))];
+  const rc=bRC();const _mt=mt(),_mm=mm();
+  const nT={},nM={},w=[];
+  ccs.forEach(cc=>{
+    const tp=[],mp=[];let missT=0,missM=0;
+    rows.forEach((r,i)=>{
+      if(rc[i]!==cc)return;
+      const dbh=parseFloat(r.DBH),tht=parseFloat(r.TOTALHT),mht=parseFloat(r.MERCHHT);
+      const isProd3=String(r.PRODCODE||"").trim()==="3";
+      // THT: include if has height AND not excluded
+      if(dbh>0&&tht>0&&!excluded.has(i))tp.push({dbh,ht:tht});
+      else if(dbh>0)missT++;
+      // MHT: include if has height, prod=3, not excluded, AND mht<=tht
+      if(dbh>0&&mht>0&&isProd3&&!excluded.has(i)&&!(tht>0&&mht>tht))mp.push({dbh,ht:mht});
+      else if(dbh>0&&isProd3)missM++;
+    });
+    const tr=runReg(tp);
+    if(tr){nT[cc]={...tr,miss:missT,low:tr.n<_mt};if(tr.n<_mt)w.push(cc+": "+tr.n+" THT (need "+_mt+")");}
+    const mr=runReg(mp);
+    if(mr){nM[cc]={...mr,miss:missM,low:mr.n<_mm};if(mr.n<_mm)w.push(cc+": "+mr.n+" MHT (need "+_mm+")");}
+  });
+  if(!Object.keys(nT).length){sErr("No valid THT regressions.");return;}
+  thtR=nT;mhtR=nM;applied=false;
+  if(w.length)sErr("Warnings: "+w.join("; "),true);
+  renderRegs();goStep(3);
+}
+// ═══════════════════════ RENDER REGRESSIONS ═══════════════════════
+function makeChart(data,reg,label,color){
+  const W=310,H=190,P={t:14,r:14,b:34,l:42};
+  if(!data||!data.length)return'<div style="color:var(--txM);font-size:10px;padding:20px">No data</div>';
+  const xs=data.map(d=>d.dbh),ys=data.map(d=>d.ht);
+  const x0=Math.max(0,Math.floor(Math.min(...xs)-1)),x1=Math.ceil(Math.max(...xs)+1);
+  const y0=Math.max(0,Math.floor(Math.min(...ys)-5)),y1=Math.ceil(Math.max(...ys)+5);
+  const xS=v=>P.l+((v-x0)/(x1-x0))*(W-P.l-P.r),yS=v=>H-P.b-((v-y0)/(y1-y0))*(H-P.t-P.b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:310px"><rect x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="rgba(0,0,0,0.15)" rx="2"/>`;
+  for(let i=0;i<5;i++){const yv=y0+(i/4)*(y1-y0);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yS(yv)}" y2="${yS(yv)}" stroke="rgba(255,255,255,0.06)"/><text x="${P.l-4}" y="${yS(yv)+3}" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.35)" font-family="inherit">${Math.round(yv)}</text>`;}
+  for(let i=0;i<5;i++){const xv=x0+(i/4)*(x1-x0);s+=`<text x="${xS(xv)}" y="${H-P.b+11}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)" font-family="inherit">${xv.toFixed(0)}</text>`;}
+  s+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.45)" font-family="inherit" font-weight="600">DBH</text>`;
+  s+=`<text x="8" y="${H/2}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.45)" font-family="inherit" font-weight="600" transform="rotate(-90,8,${H/2})">${label}</text>`;
+  if(reg){const pts=[];for(let x=Math.max(x0,1);x<=x1;x+=0.25){const y=predict(reg,x);if(y>=y0-5&&y<=y1+5)pts.push(`${xS(x).toFixed(1)},${yS(y).toFixed(1)}`);}if(pts.length>1)s+=`<polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2" opacity="0.75"/>`;}
+  data.forEach(d=>{s+=`<circle cx="${xS(d.dbh)}" cy="${yS(d.ht)}" r="3" fill="${color}" opacity="0.6" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`;});
+  return s+'</svg>';
+}
+
+function renderRegs(){
+  const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const _mt=mt(),_mm=mm();const rc=bRC();
+  let h='<div style="font-size:11px;font-weight:600;color:var(--tht);margin-bottom:8px">TOTAL HEIGHT REGRESSIONS</div><div style="overflow:auto;margin-bottom:24px"><table style="min-width:1000px"><thead><tr><th>CC</th><th>Description</th><th>n</th><th>Missing</th><th>Y-Intercept</th><th>Coef_of_X</th><th style="text-align:right">R&sup2;</th><th>SE(a)</th><th>SE(b)</th><th>t(a)</th><th>t(b)</th><th></th></tr></thead><tbody>';
+  Object.keys(thtR).sort(sc).forEach(cc=>{const r=thtR[cc];h+=`<tr class="${r.low?"low-row":""}"><td class="fw700 tag-acc">${cc}</td><td style="color:var(--txB)">${sm[cc]||""}</td><td style="color:${r.low?"var(--dng)":"var(--tx)"}">${r.n}</td><td>${r.miss||0}</td><td>${r.a.toFixed(6)}</td><td>${r.b.toFixed(6)}</td><td style="text-align:right;color:${r.r2>0.7?"var(--tht)":"var(--dng)"}">${r.r2.toFixed(4)}</td><td>${r.seA.toFixed(4)}</td><td>${r.seB.toFixed(4)}</td><td>${r.tA.toFixed(3)}</td><td>${r.tB.toFixed(3)}</td><td style="font-size:9px;color:var(--dng)">${r.low?"< "+_mt:""}</td></tr>`;});
+  h+='</tbody></table></div>';
+  if(Object.keys(mhtR).length){
+    h+='<div style="font-size:11px;font-weight:600;color:var(--mht);margin-bottom:8px">MERCH HEIGHT REGRESSIONS (PRODCODE=3)</div><div style="overflow:auto;margin-bottom:24px"><table style="min-width:1000px"><thead><tr><th>CC</th><th>Description</th><th>n</th><th>Missing</th><th>Y-Intercept</th><th>Coef_of_X</th><th style="text-align:right">R&sup2;</th><th>SE(a)</th><th>SE(b)</th><th>t(a)</th><th>t(b)</th><th></th></tr></thead><tbody>';
+    Object.keys(mhtR).sort(sc).forEach(cc=>{const r=mhtR[cc];h+=`<tr class="${r.low?"low-row":""}"><td class="fw700 tag-acc">${cc}</td><td style="color:var(--txB)">${sm[cc]||""}</td><td style="color:${r.low?"var(--dng)":"var(--tx)"}">${r.n}</td><td>${r.miss||0}</td><td>${r.a.toFixed(6)}</td><td>${r.b.toFixed(6)}</td><td style="text-align:right;color:${r.r2>0.7?"var(--mht)":"var(--dng)"}">${r.r2.toFixed(4)}</td><td>${r.seA.toFixed(4)}</td><td>${r.seB.toFixed(4)}</td><td>${r.tA.toFixed(3)}</td><td>${r.tB.toFixed(3)}</td><td style="font-size:9px;color:var(--dng)">${r.low?"< "+_mm:""}</td></tr>`;});
+    h+='</tbody></table></div>';
+  }
+  h+='<div style="font-size:11px;font-weight:600;color:var(--txM);margin-bottom:12px">SCATTER PLOTS</div><div style="display:flex;flex-wrap:wrap;gap:14px">';
+  Object.keys(thtR).sort(sc).forEach(cc=>{
+    const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)){const d=parseFloat(r.DBH),ht=parseFloat(r.TOTALHT);if(d>0&&ht>0)pts.push({dbh:d,ht});}});
+    h+=`<div class="chart-card"><div style="font-size:10px;font-weight:600;color:var(--txB);margin-bottom:4px">${cc} ${sm[cc]||""} <span style="color:var(--txM);font-weight:400">THT n=${thtR[cc].n} R\u00b2=${thtR[cc].r2.toFixed(3)}</span></div>${makeChart(pts,thtR[cc],"Total Ht","var(--tht)")}</div>`;
+  });
+  Object.keys(mhtR).sort(sc).forEach(cc=>{
+    const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)&&String(r.PRODCODE||"").trim()==="3"){const d=parseFloat(r.DBH),mht=parseFloat(r.MERCHHT),tht=parseFloat(r.TOTALHT);if(d>0&&mht>0&&!(tht>0&&mht>tht))pts.push({dbh:d,ht:mht});}});
+    h+=`<div class="chart-card"><div style="font-size:10px;font-weight:600;color:var(--txB);margin-bottom:4px">${cc} ${sm[cc]||""} <span style="color:var(--txM);font-weight:400">MHT n=${mhtR[cc].n} R\u00b2=${mhtR[cc].r2.toFixed(3)}</span></div>${makeChart(pts,mhtR[cc],"Merch Ht","var(--mht)")}</div>`;
+  });
+  h+='</div>';
+  document.getElementById("regC").innerHTML=h;
+}
+
+// ═══════════════════════ APPLY PREDICTIONS ═══════════════════════
+function skipFromGroup(r){
+  const cv=String(r.COVERNO||r.SPECIES||"").trim().padStart(4,"0");
+  if(cv==="0099"||cv==="0099")return true;
+  const pc=String(r.PRODCODE||"").trim();
+  if(pc==="9")return true;
+  if(pc==="4"&&/^0[567]/.test(cv))return true;
+  const nt=parseFloat(r.NOTREES||r.NOTREE||0);
+  if(nt>1)return true;
+  return false;
+}
+function skipPred(r){
+  // Never predict: ProdCode 9
+  const pc=String(r.PRODCODE||"").trim();
+  if(pc==="9")return true;
+  // Never predict: ProdCode 4 on hardwoods (3xx,4xx,5xx,6xx,7xx)
+  const cv=String(r.COVERNO||r.SPECIES||"").trim().padStart(4,"0");
+  if(pc==="4"&&/^0[34567]/.test(cv))return true;
+  // Never predict: CoverNo 0099
+  if(cv==="0099"||cv==="099"||cv==="99")return true;
+  // Never predict: NoTrees > 1
+  const nt=parseFloat(r.NOTREES||r.NOTREE||0);
+  if(nt>1)return true;
+  return false;
+}
+function applyPred(){
+  const rc=bRC();let skipped=0,predCount=0;
+  // Build a map from SerialNo+Counter (or TreeID) to predicted values
+  const predMap={};
+  rows.forEach((r,i)=>{
+    const cc=rc[i];const dbh=parseFloat(r.DBH);
+    if(cc&&dbh>0&&!skipPred(r)){
+      const key=String(r.SERIALNO||r.SERIAL||"").trim()+"|"+String(r.COUNTER||r.TREEID||i).trim();
+      const pred={};
+      if((!r.TOTALHT||parseFloat(r.TOTALHT)===0)&&thtR[cc]&&!thtR[cc].low){pred.TOTALHT=parseFloat(predict(thtR[cc],dbh).toFixed(1));pred.FCDIA=1;}
+      if((!r.MERCHHT||parseFloat(r.MERCHHT)===0)&&String(r.PRODCODE||"").trim()==="3"&&mhtR[cc]&&!mhtR[cc].low){pred.MERCHHT=parseFloat(predict(mhtR[cc],dbh).toFixed(1));pred.DIA0=1;}
+      if(pred.TOTALHT||pred.MERCHHT){predMap[key]=pred;predCount++;}
+    }else if(cc&&dbh>0&&skipPred(r)){skipped++;}
+  });
+  // Update joined rows
+  rows=rows.map((r,i)=>{
+    const nr={...r};const cc=rc[i];const dbh=parseFloat(r.DBH);
+    const key=String(r.SERIALNO||r.SERIAL||"").trim()+"|"+String(r.COUNTER||r.TREEID||i).trim();
+    const pred=predMap[key];
+    if(pred){
+      if(pred.TOTALHT){nr.TOTALHT=pred.TOTALHT;nr.FCDIA=1;}
+      if(pred.MERCHHT){nr.MERCHHT=pred.MERCHHT;nr.DIA0=1;}
+    }
+    nr._CC=cc||"";return nr;
+  });
+  // Update origT2 with predictions and CrownCode
+  if(origT2){
+    // Build a map from key to CrownCode
+    const ccMap={};
+    rows.forEach((r,i)=>{
+      const cc=rc[i];
+      if(cc){
+        const key=String(r.SERIALNO||r.SERIAL||"").trim()+"|"+String(r.COUNTER||r.TREEID||i).trim();
+        ccMap[key]=cc;
+      }
+    });
+    origT2=origT2.map((r,i)=>{
+      const nr={...r};
+      const key=String(r.SERIALNO||r.SERIAL||"").trim()+"|"+String(r.COUNTER||r.TREEID||i).trim();
+      // Set CrownCode
+      if(ccMap[key])nr.CROWNCODE=ccMap[key];
+      // Set predictions
+      const pred=predMap[key];
+      if(pred){
+        if(pred.TOTALHT){nr.TOTALHT=pred.TOTALHT;nr.FCDIA=1;}
+        if(pred.MERCHHT){nr.MERCHHT=pred.MERCHHT;nr.DIA0=1;}
+      }
+      return nr;
+    });
+  }
+  applied=true;
+  const msgs=[];
+  if(predCount>0)msgs.push(predCount+" trees predicted");
+  if(skipped>0)msgs.push(skipped+" skipped (ProdCode 9, ProdCode 4 on HW, 099, NoTrees>1)");
+  if(msgs.length)sErr(msgs.join(". "),true);
+  renderRes();goStep(4);
+}
+
+// ═══════════════════════ RESULTS ═══════════════════════
+function setRT(t){["data","coef","charts"].forEach(x=>{const id="tab"+(x==="data"?"D":x==="coef"?"C":"Ch");document.getElementById(id).classList.toggle("active",x===t);});renderRes(t);}
+function renderRes(tab){
+  tab=tab||"data";const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const rc=bRC();
+  const pT=rows.filter(r=>r.FCDIA===1).length,pM=rows.filter(r=>r.DIA0===1).length;
+  document.getElementById("pSum").innerHTML=`<span class="tag-tht">${pT} THT</span> + <span class="tag-mht">${pM} MHT</span> predicted`;
+  let h="";
+  if(tab==="data"){
+    const cols=["COVERNO","STNDDESC","YEARORIGIN","PRODCODE","DBH","TOTALHT","PULPHT","MERCHHT","FCDIA","DIA0","_CC"];
+    h='<table style="font-size:10px"><thead><tr><th>#</th>';
+    cols.forEach(c=>{const cl=c==="_CC"?"var(--acc)":(c==="TOTALHT"||c==="FCDIA"?"var(--tht)":(c==="MERCHHT"||c==="DIA0"?"var(--mht)":(c==="PULPHT"?"var(--pulp)":"var(--txM)")));h+=`<th style="color:${cl}">${c==="_CC"?"GRP":c}</th>`;});
+    h+='</tr></thead><tbody>';
+    const mx=Math.min(rows.length,1500);
+    for(let i=0;i<mx;i++){const r=rows[i];const tp=r.FCDIA===1,mp=r.DIA0===1;
+      h+=`<tr><td style="color:var(--txM)">${i+1}</td>`;
+      cols.forEach(c=>{const v=c==="_CC"?(r._CC||""):(r[c]??"");const cl=(c==="TOTALHT"&&tp)?"predicted-tht":(c==="MERCHHT"&&mp)?"predicted-mht":(c==="_CC"?"tag-acc":"");h+=`<td class="${cl}">${v}</td>`;});
+      h+='</tr>';}
+    if(rows.length>mx)h+=`<tr><td colspan="${cols.length+1}" style="text-align:center;color:var(--txM);padding:12px">Showing ${mx} of ${rows.length}</td></tr>`;
+    h+='</tbody></table>';
+  }else if(tab==="coef"){
+    h='<div style="padding:20px;max-width:1000px"><div style="font-size:11px;font-weight:600;color:var(--tht);margin-bottom:8px">TOTAL HEIGHT</div><table style="margin-bottom:24px"><thead><tr><th>CC</th><th>Desc</th><th>n</th><th>Y-Intercept</th><th>Coef_of_X</th><th style="text-align:right">R&sup2;</th></tr></thead><tbody>';
+    Object.keys(thtR).sort(sc).forEach(cc=>{const r=thtR[cc];h+=`<tr><td class="fw700 tag-acc">${cc}</td><td style="color:var(--txB)">${sm[cc]||""}</td><td>${r.n}</td><td>${r.a.toFixed(8)}</td><td>${r.b.toFixed(8)}</td><td style="text-align:right;color:${r.r2>0.7?"var(--tht)":"var(--dng)"}">${r.r2.toFixed(4)}</td></tr>`;});
+    h+='</tbody></table>';
+    if(Object.keys(mhtR).length){h+='<div style="font-size:11px;font-weight:600;color:var(--mht);margin-bottom:8px">MERCH HEIGHT</div><table><thead><tr><th>CC</th><th>Desc</th><th>n</th><th>Y-Intercept</th><th>Coef_of_X</th><th style="text-align:right">R&sup2;</th></tr></thead><tbody>';
+    Object.keys(mhtR).sort(sc).forEach(cc=>{const r=mhtR[cc];h+=`<tr><td class="fw700 tag-acc">${cc}</td><td style="color:var(--txB)">${sm[cc]||""}</td><td>${r.n}</td><td>${r.a.toFixed(8)}</td><td>${r.b.toFixed(8)}</td><td style="text-align:right;color:${r.r2>0.7?"var(--mht)":"var(--dng)"}">${r.r2.toFixed(4)}</td></tr>`;});
+    h+='</tbody></table>';}h+='</div>';
+  }else{
+    h='<div style="display:flex;flex-wrap:wrap;gap:14px;padding:20px">';
+    Object.keys(thtR).sort(sc).forEach(cc=>{const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)){const d=parseFloat(r.DBH),ht=parseFloat(r.TOTALHT);if(d>0&&ht>0)pts.push({dbh:d,ht});}});h+=`<div class="chart-card"><div style="font-size:10px;font-weight:600;color:var(--txB);margin-bottom:4px">${cc} ${sm[cc]||""} <span style="color:var(--txM);font-weight:400">THT n=${thtR[cc].n}</span></div>${makeChart(pts,thtR[cc],"Total Ht","var(--tht)")}</div>`;});
+    Object.keys(mhtR).sort(sc).forEach(cc=>{const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)&&String(r.PRODCODE||"").trim()==="3"){const d=parseFloat(r.DBH),mht=parseFloat(r.MERCHHT),tht=parseFloat(r.TOTALHT);if(d>0&&mht>0&&!(tht>0&&mht>tht))pts.push({dbh:d,ht:mht});}});h+=`<div class="chart-card"><div style="font-size:10px;font-weight:600;color:var(--txB);margin-bottom:4px">${cc} ${sm[cc]||""} <span style="color:var(--txM);font-weight:400">MHT n=${mhtR[cc].n}</span></div>${makeChart(pts,mhtR[cc],"Merch Ht","var(--mht)")}</div>`;});
+    h+='</div>';
+  }
+  document.getElementById("resC").innerHTML=h;
+}
+// ═══════════════════════ EXPORT ═══════════════════════
+function expAll(){
+  const wb=XLSX.utils.book_new();const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const rc=bRC();
+
+  // 1. Charts sheet - scatter plot data for MHT and THT by CrownCode
+  const cd=[];
+  cd.push([],[],["","","MHT"],[]);
+  // MHT charts: for each CC, list CROWNCODE, DBH, LnMHT
+  Object.keys(mhtR).sort(sc).forEach(cc=>{
+    cd.push(["","","CROWNCODE: "+cc+" - "+( sm[cc]||"")]);
+    cd.push(["","","DBH","LnMHT","MerchHT"]);
+    rows.forEach((r,i)=>{
+      if(rc[i]!==cc||excluded.has(i))return;
+      if(String(r.PRODCODE||"").trim()!=="3")return;
+      const dbh=parseFloat(r.DBH),mht=parseFloat(r.MERCHHT),tht=parseFloat(r.TOTALHT);
+      if(dbh>0&&mht>0&&!(tht>0&&mht>tht)){
+        cd.push(["","",dbh,Math.log(mht),mht]);
+      }
+    });
+    cd.push([]);
+  });
+  cd.push([],[],["","","THT"],[]);
+  // THT charts: for each CC, list CROWNCODE, DBH, LnTHT
+  Object.keys(thtR).sort(sc).forEach(cc=>{
+    cd.push(["","","CROWNCODE: "+cc+" - "+(sm[cc]||"")]);
+    cd.push(["","","DBH","LnTHT","TotalHT"]);
+    rows.forEach((r,i)=>{
+      if(rc[i]!==cc||excluded.has(i))return;
+      const dbh=parseFloat(r.DBH),tht=parseFloat(r.TOTALHT);
+      if(dbh>0&&tht>0){
+        cd.push(["","",dbh,Math.log(tht),tht]);
+      }
+    });
+    cd.push([]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cd),"Charts");
+
+  // 2. Regressions (MHT then THT)
+  const rd=[[],[],["","","MHT"],[],["","","StatOutputID","CROWNCODE","DataField","Count_of_LnMHT","Missing","Y-Intercept","Coef_of_X","SE_of_Y-Intercept","SE_of_X","Beta_of_X","t-Value_of_Y-Intercept","t-Value_of_X"]];
+  let sid=1;
+  Object.keys(mhtR).sort(sc).forEach(cc=>{const r=mhtR[cc];rd.push(["","",sid++,cc,"InvDBH",r.n,r.miss||0,r.a,r.b,r.seA,r.seB,r.beta,r.tA,r.tB]);});
+  rd.push([],[],[],["","","THT"],[],["","","StatOutputID","CROWNCODE","DataField","Count_of_LnTHT","Missing","Y-Intercept","Coef_of_X","SE_of_Y-Intercept","SE_of_X","Beta_of_X","t-Value_of_Y-Intercept","t-Value_of_X"]);
+  sid=1;
+  Object.keys(thtR).sort(sc).forEach(cc=>{const r=thtR[cc];rd.push(["","",sid++,cc,"InvDBH",r.n,r.miss||0,r.a,r.b,r.seA,r.seB,r.beta,r.tA,r.tB]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rd),"Regressions");
+
+  // 3. Regress_Strata
+  const sd=[[],[],["","","CROWN_CODE","DESCRIPTION"]];
+  Object.entries(sm).sort((a,b)=>sc(a[0],b[0])).forEach(([cc,desc])=>{sd.push(["","",cc,desc]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),"Regress_Strata");
+
+  // 4. Plot_Tree (joined data)
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(r=>{const n={...r};delete n._CC;return n;})),"Plot_Tree");
+
+  // 5. Trees2 (original with predicted heights updated)
+  if(origT2&&origT2.length){
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(origT2),"Trees2");
+  }
+
+  XLSX.writeFile(wb,"HtRegression.xlsx");
+}
+function expCoef(){
+  const wb=XLSX.utils.book_new();const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);
+  const rd=[["TYPE","CROWNCODE","DESCRIPTION","DataField","Count","Missing","Y-Intercept","Coef_of_X","SE_of_Y-Int","SE_of_X","Beta_of_X","t-Value_Y-Int","t-Value_X","R2"]];
+  Object.keys(thtR).sort(sc).forEach(cc=>{const r=thtR[cc];rd.push(["THT",cc,sm[cc]||"","InvDBH",r.n,r.miss||0,r.a,r.b,r.seA,r.seB,r.beta,r.tA,r.tB,r.r2]);});
+  Object.keys(mhtR).sort(sc).forEach(cc=>{const r=mhtR[cc];rd.push(["MHT",cc,sm[cc]||"","InvDBH",r.n,r.miss||0,r.a,r.b,r.seA,r.seB,r.beta,r.tA,r.tB,r.r2]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rd),"Coefficients");
+  XLSX.writeFile(wb,"regression_coefficients.xlsx");
+}
+function expCharts(){
+  const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const rc=bRC();
+  let html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Height Regression Charts</title>';
+  html+='<style>body{font-family:Arial,sans-serif;background:#fff;color:#333;padding:20px}h1{font-size:18px;margin-bottom:4px}h2{font-size:14px;color:#666;margin:24px 0 8px}.chart-grid{display:flex;flex-wrap:wrap;gap:16px}.chart-box{border:1px solid #ddd;border-radius:6px;padding:12px;background:#fafafa}.chart-title{font-size:11px;font-weight:bold;margin-bottom:4px}.chart-sub{font-size:10px;color:#888;margin-bottom:8px}svg{background:#fff}@media print{.chart-box{break-inside:avoid}}</style></head><body>';
+  html+='<h1>Height Regression Charts</h1><p style="font-size:12px;color:#888">Generated '+new Date().toLocaleDateString()+'</p>';
+  // THT
+  html+='<h2>Total Height Regressions</h2><div class="chart-grid">';
+  Object.keys(thtR).sort(sc).forEach(cc=>{
+    const reg=thtR[cc];
+    const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)){const d=parseFloat(r.DBH),h=parseFloat(r.TOTALHT);if(d>0&&h>0)pts.push({dbh:d,ht:h});}});
+    html+='<div class="chart-box"><div class="chart-title">'+cc+' - '+(sm[cc]||'')+'</div><div class="chart-sub">THT n='+reg.n+' R²='+reg.r2.toFixed(4)+'  Y-Int='+reg.a.toFixed(4)+' Coef='+reg.b.toFixed(4)+'</div>';
+    html+=makeChartPrint(pts,reg,"Total Ht","#2d7a3a");
+    html+='</div>';
+  });
+  html+='</div>';
+  // MHT
+  if(Object.keys(mhtR).length){
+    html+='<h2>Merch Height Regressions (ProdCode=3)</h2><div class="chart-grid">';
+    Object.keys(mhtR).sort(sc).forEach(cc=>{
+      const reg=mhtR[cc];
+      const pts=[];rows.forEach((r,i)=>{if(rc[i]===cc&&!excluded.has(i)&&String(r.PRODCODE||"").trim()==="3"){const d=parseFloat(r.DBH),mh=parseFloat(r.MERCHHT),th=parseFloat(r.TOTALHT);if(d>0&&mh>0&&!(th>0&&mh>th))pts.push({dbh:d,ht:mh});}});
+      html+='<div class="chart-box"><div class="chart-title">'+cc+' - '+(sm[cc]||'')+'</div><div class="chart-sub">MHT n='+reg.n+' R²='+reg.r2.toFixed(4)+'  Y-Int='+reg.a.toFixed(4)+' Coef='+reg.b.toFixed(4)+'</div>';
+      html+=makeChartPrint(pts,reg,"Merch Ht","#b8860b");
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</body></html>';
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="HtRegression_Charts.html";a.click();
+}
+function makeChartPrint(data,reg,label,color){
+  const W=380,H=240,P={t:16,r:16,b:40,l:50};
+  if(!data||!data.length)return'<div style="color:#999;font-size:10px;padding:20px">No data</div>';
+  const xs=data.map(d=>d.dbh),ys=data.map(d=>d.ht);
+  const x0=Math.max(0,Math.floor(Math.min(...xs)-1)),x1=Math.ceil(Math.max(...xs)+1);
+  const y0=Math.max(0,Math.floor(Math.min(...ys)-5)),y1=Math.ceil(Math.max(...ys)+5);
+  const xS=v=>P.l+((v-x0)/(x1-x0))*(W-P.l-P.r),yS=v=>H-P.b-((v-y0)/(y1-y0))*(H-P.t-P.b);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<rect x="'+P.l+'" y="'+P.t+'" width="'+(W-P.l-P.r)+'" height="'+(H-P.t-P.b)+'" fill="#f8f8f8" stroke="#ddd" rx="2"/>';
+  for(let i=0;i<5;i++){const yv=y0+(i/4)*(y1-y0);s+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+yS(yv)+'" y2="'+yS(yv)+'" stroke="#eee"/><text x="'+(P.l-5)+'" y="'+(yS(yv)+4)+'" text-anchor="end" font-size="9" fill="#999">'+Math.round(yv)+'</text>';}
+  for(let i=0;i<5;i++){const xv=x0+(i/4)*(x1-x0);s+='<text x="'+xS(xv)+'" y="'+(H-P.b+14)+'" text-anchor="middle" font-size="9" fill="#999">'+xv.toFixed(0)+'</text>';}
+  s+='<text x="'+(W/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">DBH</text>';
+  s+='<text x="10" y="'+(H/2)+'" text-anchor="middle" font-size="10" fill="#666" font-weight="bold" transform="rotate(-90,10,'+(H/2)+')">'+label+'</text>';
+  if(reg){const pts=[];for(let x=Math.max(x0,1);x<=x1;x+=0.25){const y=predict(reg,x);if(y>=y0-5&&y<=y1+5)pts.push(xS(x).toFixed(1)+','+yS(y).toFixed(1));}if(pts.length>1)s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2"/>';}
+  data.forEach(d=>{s+='<circle cx="'+xS(d.dbh)+'" cy="'+yS(d.ht)+'" r="3.5" fill="'+color+'" opacity="0.5" stroke="#fff" stroke-width="0.5"/>';});
+  return s+'</svg>';
+}
+function expTrees2(){
+  if(!origT2||!origT2.length){sErr("No Trees2 data available. Use Paste or Separate import mode.");return;}
+  const wb=XLSX.utils.book_new();
+  // Export origT2 exactly as it was, with predicted heights updated
+  const ws=XLSX.utils.json_to_sheet(origT2);
+  XLSX.utils.book_append_sheet(wb,ws,"Trees2");
+  XLSX.writeFile(wb,"Trees2_Updated.xlsx");
+}
+</script>
+</body></html>
