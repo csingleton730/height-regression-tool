@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Height Regression Tool</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>if(typeof XLSX==="undefined")document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');</script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0c1410;--card:#121e16;--card2:#172219;--bdr:#253028;--bdr2:#2f4035;--acc:#3d8b4d;--acc-h:#4da85f;--acc-bg:rgba(61,139,77,0.1);--tx:#c8dece;--txM:#6e9478;--txB:#e4f2e8;--tht:#52c46a;--mht:#dba63a;--dng:#cf5555;--dng-bg:rgba(207,85,85,0.1);--wrn-bg:rgba(219,166,58,0.08);--pulp:#c77dff}
@@ -52,11 +53,12 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
     <div class="dot disabled" id="dot1" onclick="goStep(1)">2</div><div class="dot-line"></div>
     <div class="dot disabled" id="dot2" onclick="goStep(2)">3</div><div class="dot-line"></div>
     <div class="dot disabled" id="dot3" onclick="goStep(3)">4</div><div class="dot-line"></div>
-    <div class="dot disabled" id="dot4" onclick="goStep(4)">5</div>
+    <div class="dot disabled" id="dot4" onclick="goStep(4)">5</div><div class="dot-line"></div>
+    <div class="dot" id="dot5" onclick="goStep(5)" style="background:var(--card2);border-color:var(--bdr2,var(--bdr));color:var(--mht);font-size:8px">QP</div>
   </div>
 </header>
 <div id="errBar" class="err-bar" style="display:none"><span id="errMsg"></span><span onclick="clearErr()" style="margin-left:12px;cursor:pointer;opacity:0.6">&times;</span></div>
-
+ 
 <!-- STEP 0: IMPORT -->
 <div class="step active" id="step0" style="align-items:center;justify-content:center;min-height:calc(100vh - 61px);padding:40px">
   <div style="max-width:600px;width:100%;text-align:center">
@@ -76,12 +78,13 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
       <input type="file" id="fJ" accept=".xlsx,.xls,.csv" onchange="loadJoined(this)" style="display:none">
     </div>
     <div id="impS" style="display:none;background:var(--card);border-radius:8px;border:1px solid var(--bdr);padding:24px">
-      <div style="font-size:12px;color:var(--txM);margin-bottom:16px">Joins on SERIALNO.</div>
+      <div style="font-size:12px;color:var(--txM);margin-bottom:16px;text-align:center">Import separate files. Joins Stands2 &rarr; Plots2 &rarr; Trees2.</div>
       <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div style="flex:1;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px">STANDS2</div><button class="bs" id="bS2" onclick="document.getElementById('fS2').click()" style="width:100%">Choose</button><input type="file" id="fS2" accept=".xlsx,.xls" onchange="loadS2(this)" style="display:none"></div>
         <div style="flex:1;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px">PLOTS2</div><button class="bs" id="bP2" onclick="document.getElementById('fP2').click()" style="width:100%">Choose</button><input type="file" id="fP2" accept=".xlsx,.xls" onchange="loadP2(this)" style="display:none"></div>
         <div style="flex:1;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px">TREES2</div><button class="bs" id="bT2" onclick="document.getElementById('fT2').click()" style="width:100%">Choose</button><input type="file" id="fT2" accept=".xlsx,.xls" onchange="loadT2(this)" style="display:none"></div>
       </div>
-      <button class="bp" id="bJoin" onclick="joinTbls()" disabled style="padding:12px 28px">Join &amp; Continue</button>
+      <div style="text-align:center"><button class="bp" id="bJoin" onclick="joinTbls()" disabled style="padding:12px 28px">Join &amp; Continue</button></div>
     </div>
     <div id="impP" style="display:none;background:var(--card);border-radius:8px;border:1px solid var(--bdr);padding:24px">
       <div style="font-size:12px;color:var(--txM);margin-bottom:12px;line-height:1.7;text-align:center">
@@ -109,7 +112,7 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
     </div>
   </div>
 </div>
-
+ 
 <!-- STEP 1: GROUPING -->
 <div class="step" id="step1" style="min-height:calc(100vh - 61px)">
   <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--bdr)">
@@ -146,7 +149,7 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
     <div style="padding:16px;border-top:1px solid var(--bdr)"><button class="bp" onclick="runRegs()" style="width:100%;padding:11px" id="bRun">Run Regressions</button></div>
   </div>
 </div>
-
+ 
 <!-- STEP 2: REVIEW (QC flagged trees) -->
 <div class="step" id="step2" style="flex-direction:column;min-height:calc(100vh - 61px)">
   <div style="padding:16px 24px;display:flex;align-items:center;gap:16;border-bottom:1px solid var(--bdr);background:var(--card)">
@@ -158,18 +161,19 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
   </div>
   <div style="flex:1;overflow:auto;padding:0" id="qcContent"></div>
 </div>
-
+ 
 <!-- STEP 3: REGRESSIONS -->
 <div class="step" id="step3" style="flex-direction:column;min-height:calc(100vh - 61px)">
   <div style="padding:16px 24px;display:flex;align-items:center;gap:16;border-bottom:1px solid var(--bdr);background:var(--card)">
     <div style="font-size:14px;font-weight:700;color:var(--txB)">Regression Results</div>
     <div style="flex:1"></div>
+    <button class="bs" onclick="togglePredict()" id="bPredToggle3" style="padding:6px 12px;font-size:10px">Quick Predict</button>
     <button class="bs" onclick="goStep(2)">Back to Review</button>
     <button class="bp" onclick="applyPred()">Apply Predictions</button>
   </div>
   <div style="flex:1;overflow:auto;padding:24px" id="regC"></div>
 </div>
-
+ 
 <!-- STEP 4: RESULTS -->
 <div class="step" id="step4" style="flex-direction:column;height:calc(100vh - 61px)">
   <div style="display:flex;align-items:center;border-bottom:1px solid var(--bdr);background:var(--card);padding:0 16px">
@@ -178,6 +182,7 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
     <button class="tab-btn" id="tabCh" onclick="setRT('charts')">CHARTS</button>
     <div style="flex:1"></div>
     <div style="font-size:10px;color:var(--txM);margin-right:12px" id="pSum"></div>
+    <button class="bs" onclick="togglePredict()" style="padding:6px 12px;font-size:10px;margin-right:6px">Quick Predict</button>
     <button class="bs" onclick="goStep(1)" style="padding:6px 12px;font-size:10px;margin-right:6px">Edit Groups</button>
     <button class="bs" onclick="expCoef()" style="padding:6px 12px;font-size:10px;margin-right:6px">Export Coefficients</button>
     <button class="bs" onclick="expTrees2()" style="padding:6px 12px;font-size:10px;margin-right:6px">Export Trees2</button>
@@ -186,13 +191,98 @@ header{border-bottom:1px solid var(--bdr);padding:14px 24px;display:flex;align-i
   </div>
   <div style="flex:1;overflow:auto" id="resC"></div>
 </div>
+<!-- STEP 5: QUICK PREDICTOR (standalone page) -->
+<div class="step" id="step5" style="flex-direction:row;height:calc(100vh - 61px)">
+  <!-- Left: paste data -->
+  <div style="width:420px;display:flex;flex-direction:column;border-right:1px solid var(--bdr)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--bdr);background:var(--card)">
+      <div style="font-size:10px;font-weight:600;color:var(--txM);letter-spacing:0.08em">QUICK PREDICTOR</div>
+      <div style="font-size:10px;color:var(--txM);margin-top:4px">Paste DBH and Height columns. Headers optional. Zeros excluded. Tab, comma, or space separated.</div>
+    </div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--card2);display:flex;gap:8px;align-items:center">
+      <div style="font-size:10px;color:var(--txM)">Height:</div>
+      <select class="inp" id="qpHtType" onchange="qpReRun()" style="font-size:11px">
+        <option value="total">Total Height</option>
+        <option value="merch">Merch Height</option>
+      </select>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;padding:12px 16px;gap:8px">
+      <textarea class="inp" id="qpData" placeholder="Paste DBH and Height (two columns, any format):&#10;&#10;DBH&#9;HT&#10;10.2&#9;65&#10;8.4&#9;52&#10;12.8&#9;72&#10;14.1&#9;0&#10;&#10;Or just numbers:&#10;10.2&#9;65&#10;8.4&#9;52&#10;&#10;Heights of 0 are excluded from regression." style="flex:1;resize:none;font-size:11px;line-height:1.6" oninput="qpReRun()"></textarea>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="font-size:9px;color:var(--txM);flex:1" id="qpDataSum"></div>
+        <button class="bs" onclick="document.getElementById('qpData').value='';qpReRun()" style="padding:4px 10px;font-size:9px">Clear</button>
+      </div>
+    </div>
+  </div>
+  <!-- Right: predict -->
+  <div style="flex:1;display:flex;flex-direction:column;overflow:auto">
+    <div id="qpRegStats" style="padding:16px;border-bottom:1px solid var(--bdr)">
+      <div style="color:var(--txM);font-size:11px">Paste tree data on the left to build a regression.</div>
+    </div>
+    <!-- Single predict -->
+    <div style="padding:16px;border-bottom:1px solid var(--bdr)">
+      <div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:10px;letter-spacing:0.06em">PREDICT HEIGHT</div>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div>
+          <div style="font-size:9px;color:var(--txM);margin-bottom:4px">DBH</div>
+          <input class="inp" type="number" id="qpDBH" step="0.1" min="0.1" placeholder="0.0" oninput="qpSingle()" style="width:100px;font-size:14px;padding:10px">
+        </div>
+        <div style="padding-bottom:4px"><span style="font-size:16px;color:var(--txM)">&rarr;</span></div>
+        <div id="qpSingleResult" style="padding-bottom:4px"><div style="color:var(--txM);font-size:11px">Enter DBH</div></div>
+      </div>
+    </div>
+    <!-- Batch -->
+    <div style="flex:1;display:flex;flex-direction:column;padding:16px;overflow:hidden;min-height:200px">
+      <div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:8px;letter-spacing:0.06em">BATCH PREDICT</div>
+      <div style="display:flex;gap:12px;flex:1;overflow:hidden">
+        <div style="display:flex;flex-direction:column;width:120px">
+          <div style="font-size:9px;color:var(--txM);margin-bottom:4px">DBH values (one per line)</div>
+          <textarea class="inp" id="qpBatchIn" placeholder="10.5&#10;12.3&#10;8.7&#10;15.0" style="flex:1;resize:none;font-size:11px" oninput="qpBatch()"></textarea>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+          <div style="flex:1;overflow:auto" id="qpBatchOut"></div>
+          <button class="bs" onclick="qpCopyBatch()" id="qpCopyBtn" style="margin-top:8px;padding:6px 12px;font-size:10px;display:none">Copy to Clipboard</button>
+        </div>
+      </div>
+    </div>
+    <!-- Chart -->
+    <div style="padding:16px;border-top:1px solid var(--bdr)" id="qpChart"></div>
+  </div>
+</div>
+ 
+<!-- QUICK PREDICT PANEL -->
+<div id="predictPanel" style="display:none;position:fixed;bottom:20px;right:20px;width:400px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:100;overflow:hidden">
+  <div style="padding:12px 16px;background:var(--card2);border-bottom:1px solid var(--bdr);display:flex;align-items:center">
+    <div style="font-size:12px;font-weight:700;color:var(--txB);flex:1">Quick Height Predictor</div>
+    <span onclick="togglePredict()" style="cursor:pointer;color:var(--txM);font-size:16px">&times;</span>
+  </div>
+  <div style="padding:16px">
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">CROWNCODE</div>
+        <select class="inp" id="predCC" onchange="quickPredict()" style="width:100%;font-size:11px"></select>
+      </div>
+      <div style="width:90px">
+        <div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">DBH</div>
+        <input class="inp" type="number" id="predDBH" step="0.1" min="0.1" placeholder="0.0" oninput="quickPredict()" style="width:100%;font-size:11px">
+      </div>
+    </div>
+    <div id="predResults" style="min-height:60px"></div>
+    <div style="border-top:1px solid var(--bdr);margin-top:12px;padding-top:12px">
+      <div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:8px">BATCH PREDICT</div>
+      <div style="font-size:10px;color:var(--txM);margin-bottom:6px">Paste DBH values (one per line) to get predicted heights for the selected group:</div>
+      <textarea class="inp" id="batchDBH" placeholder="10.5&#10;12.3&#10;8.7&#10;..." style="width:100%;min-height:70px;resize:vertical;font-size:11px" oninput="batchPredict()"></textarea>
+      <div id="batchResults" style="margin-top:8px;max-height:150px;overflow:auto"></div>
+    </div>
+  </div>
+</div>
 <script>
 // ═══════════════════════ STATE ═══════════════════════
 let rows=[],combos=[],groups={},sel=new Set(),thtR={},mhtR={},applied=false,curStep=0;
 let s2d=null,p2d=null,t2d=null,origT2=null;
 let excluded=new Set(); // Set of row indices excluded from regression
 const CC="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
+ 
 // ═══════════════════════ HELPERS ═══════════════════════
 const norm=o=>{const r={};Object.entries(o).forEach(([k,v])=>{r[k.toUpperCase().replace(/[\s_]+/g,"").trim()]=v;});return r;};
 const val=(r,...k)=>{for(const x of k){const v=r[x];if(v!==undefined&&v!==null&&String(v).trim()!=="")return String(v).trim();}return"";};
@@ -206,7 +296,7 @@ const mt=()=>parseInt(document.getElementById("iMT").value)||30;
 const mm=()=>parseInt(document.getElementById("iMM").value)||15;
 function sErr(m,w){const b=document.getElementById("errBar");b.style.display="block";b.className="err-bar "+(w?"warn":"err");document.getElementById("errMsg").textContent=m;}
 function clearErr(){document.getElementById("errBar").style.display="none";}
-
+ 
 // ═══════════════════════ QC FLAGS ═══════════════════════
 function getPulpFlag(r){
   const tht=parseFloat(r.TOTALHT),pht=parseFloat(r.PULPHT||r.PHT||0);
@@ -220,7 +310,7 @@ function getMhtFlag(r){
   const tht=parseFloat(r.TOTALHT),mht=parseFloat(r.MERCHHT);
   return(mht>0&&tht>0&&mht>tht);
 }
-
+ 
 // ═══════════════════════ REGRESSION ═══════════════════════
 function runReg(pairs){
   const d=pairs.filter(p=>p.dbh>0&&p.ht>0).map(p=>({x:1/p.dbh,y:Math.log(p.ht)}));
@@ -243,20 +333,26 @@ function runReg(pairs){
   return{a,b,r2,se,n,seA,seB,tA,tB,beta};
 }
 function predict(reg,dbh){return(reg&&dbh>0)?Math.exp(reg.a+reg.b/dbh):0;}
-
+ 
 // ═══════════════════════ NAV ═══════════════════════
 function goStep(s){
-  const canGo=[true,rows.length>0,rows.length>0&&Object.keys(groups).length>0,Object.keys(thtR).length>0,applied];
+  const canGo=[true,rows.length>0,rows.length>0&&Object.keys(groups).length>0,Object.keys(thtR).length>0,applied,true];
   if(!canGo[s])return;
   curStep=s;
-  for(let i=0;i<5;i++){
-    document.getElementById("step"+i).classList.toggle("active",i===s);
+  for(let i=0;i<6;i++){
+    const el=document.getElementById("step"+i);
+    if(el)el.classList.toggle("active",i===s);
     const d=document.getElementById("dot"+i);
-    d.classList.remove("active","done","disabled");
-    if(i===s)d.classList.add("active");else if(i<s)d.classList.add("done");else if(!canGo[i])d.classList.add("disabled");
+    if(d){
+      d.classList.remove("active","done","disabled");
+      if(i===s)d.classList.add("active");
+      else if(i===5){/* QP always accessible */}
+      else if(i<s)d.classList.add("done");
+      else if(!canGo[i])d.classList.add("disabled");
+    }
   }
 }
-
+ 
 // ═══════════════════════ IMPORT ═══════════════════════
 function setMode(m){
   document.getElementById("impJ").style.display=m==="j"?"block":"none";
@@ -440,13 +536,13 @@ function renderGrp(){
     fhtml+='</optgroup>';
   }
   fdd.innerHTML=fhtml;
-
+ 
   // Filter visible rows
   const visible=filterVal?un.filter(c=>{
     if(filterVal.startsWith("cv:"))return c.cover===filterVal.slice(3);
     return matchFilter(c,filterVal);
   }):un;
-
+ 
   // Unassigned table
   document.getElementById("uH").innerHTML='<tr><th style="width:32px;text-align:center"></th><th>COVERNO</th><th>STNDDESC</th><th>YEAR</th><th>TH</th><th style="text-align:right">TREES</th><th style="text-align:right;color:var(--tht)">THT</th><th style="text-align:right;color:var(--mht)">MHT</th><th>TYPE</th></tr>';
   let b="";
@@ -599,7 +695,7 @@ function assignCC(){
 function unC(k){delete groups[k];renderGrp();}
 function bRC(){const m={};rows.forEach((r,i)=>{const k=ck(r);if(groups[k])m[i]=groups[k].cc;});return m;}
 function sMap(){const m={};Object.values(groups).forEach(g=>{m[g.cc]=g.desc;});return m;}
-
+ 
 // ═══════════════════════ STEP 2: QC REVIEW ═══════════════════════
 function runRegs(){
   clearErr();
@@ -652,7 +748,7 @@ function togExcl(idx){
   if(excluded.has(idx))excluded.delete(idx);else excluded.add(idx);
   renderQC();
 }
-
+ 
 // ═══════════════════════ PROCEED TO REGRESSIONS ═══════════════════════
 function proceedToReg(){
   clearErr();
@@ -699,7 +795,7 @@ function makeChart(data,reg,label,color){
   data.forEach(d=>{s+=`<circle cx="${xS(d.dbh)}" cy="${yS(d.ht)}" r="3" fill="${color}" opacity="0.6" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`;});
   return s+'</svg>';
 }
-
+ 
 function renderRegs(){
   const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const _mt=mt(),_mm=mm();const rc=bRC();
   let h='<div style="font-size:11px;font-weight:600;color:var(--tht);margin-bottom:8px">TOTAL HEIGHT REGRESSIONS</div><div style="overflow:auto;margin-bottom:24px"><table style="min-width:1000px"><thead><tr><th>CC</th><th>Description</th><th>n</th><th>Missing</th><th>Y-Intercept</th><th>Coef_of_X</th><th style="text-align:right">R&sup2;</th><th>SE(a)</th><th>SE(b)</th><th>t(a)</th><th>t(b)</th><th></th></tr></thead><tbody>';
@@ -722,7 +818,7 @@ function renderRegs(){
   h+='</div>';
   document.getElementById("regC").innerHTML=h;
 }
-
+ 
 // ═══════════════════════ APPLY PREDICTIONS ═══════════════════════
 function skipFromGroup(r){
   const cv=String(r.COVERNO||r.SPECIES||"").trim().padStart(4,"0");
@@ -757,8 +853,8 @@ function applyPred(){
     if(cc&&dbh>0&&!skipPred(r)){
       const key=String(r.SERIALNO||r.SERIAL||"").trim()+"|"+String(r.COUNTER||r.TREEID||i).trim();
       const pred={};
-      if((!r.TOTALHT||parseFloat(r.TOTALHT)===0)&&thtR[cc]&&!thtR[cc].low){pred.TOTALHT=parseFloat(predict(thtR[cc],dbh).toFixed(1));pred.FCDIA=1;}
-      if((!r.MERCHHT||parseFloat(r.MERCHHT)===0)&&String(r.PRODCODE||"").trim()==="3"&&mhtR[cc]&&!mhtR[cc].low){pred.MERCHHT=parseFloat(predict(mhtR[cc],dbh).toFixed(1));pred.DIA0=1;}
+      if((!r.TOTALHT||parseFloat(r.TOTALHT)===0)&&thtR[cc]&&!thtR[cc].low){pred.TOTALHT=parseFloat(predict(thtR[cc],dbh).toFixed(2));pred.FCDIA=1;}
+      if((!r.MERCHHT||parseFloat(r.MERCHHT)===0)&&String(r.PRODCODE||"").trim()==="3"&&mhtR[cc]&&!mhtR[cc].low){pred.MERCHHT=parseFloat(predict(mhtR[cc],dbh).toFixed(2));pred.DIA0=1;}
       if(pred.TOTALHT||pred.MERCHHT){predMap[key]=pred;predCount++;}
     }else if(cc&&dbh>0&&skipPred(r)){skipped++;}
   });
@@ -805,7 +901,7 @@ function applyPred(){
   if(msgs.length)sErr(msgs.join(". "),true);
   renderRes();goStep(4);
 }
-
+ 
 // ═══════════════════════ RESULTS ═══════════════════════
 function setRT(t){["data","coef","charts"].forEach(x=>{const id="tab"+(x==="data"?"D":x==="coef"?"C":"Ch");document.getElementById(id).classList.toggle("active",x===t);});renderRes(t);}
 function renderRes(tab){
@@ -843,7 +939,7 @@ function renderRes(tab){
 // ═══════════════════════ EXPORT ═══════════════════════
 function expAll(){
   const wb=XLSX.utils.book_new();const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const rc=bRC();
-
+ 
   // 1. Charts sheet - scatter plot data for MHT and THT by CrownCode
   const cd=[];
   cd.push([],[],["","","MHT"],[]);
@@ -876,7 +972,7 @@ function expAll(){
     cd.push([]);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cd),"Charts");
-
+ 
   // 2. Regressions (MHT then THT)
   const rd=[[],[],["","","MHT"],[],["","","StatOutputID","CROWNCODE","DataField","Count_of_LnMHT","Missing","Y-Intercept","Coef_of_X","SE_of_Y-Intercept","SE_of_X","Beta_of_X","t-Value_of_Y-Intercept","t-Value_of_X"]];
   let sid=1;
@@ -885,20 +981,20 @@ function expAll(){
   sid=1;
   Object.keys(thtR).sort(sc).forEach(cc=>{const r=thtR[cc];rd.push(["","",sid++,cc,"InvDBH",r.n,r.miss||0,r.a,r.b,r.seA,r.seB,r.beta,r.tA,r.tB]);});
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rd),"Regressions");
-
+ 
   // 3. Regress_Strata
   const sd=[[],[],["","","CROWN_CODE","DESCRIPTION"]];
   Object.entries(sm).sort((a,b)=>sc(a[0],b[0])).forEach(([cc,desc])=>{sd.push(["","",cc,desc]);});
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sd),"Regress_Strata");
-
+ 
   // 4. Plot_Tree (joined data)
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(r=>{const n={...r};delete n._CC;return n;})),"Plot_Tree");
-
+ 
   // 5. Trees2 (original with predicted heights updated)
   if(origT2&&origT2.length){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(origT2),"Trees2");
   }
-
+ 
   XLSX.writeFile(wb,"HtRegression.xlsx");
 }
 function expCoef(){
@@ -909,6 +1005,124 @@ function expCoef(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rd),"Coefficients");
   XLSX.writeFile(wb,"regression_coefficients.xlsx");
 }
+// ═══════════════════════ QUICK PREDICTOR (Step 5) ═══════════════════════
+let qpReg=null, qpPts=[];
+function qpParseData(){
+  const text=document.getElementById("qpData").value.trim();
+  if(!text)return[];
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<1)return[];
+  // Split by tab, comma, or multiple spaces
+  const splitLine=l=>l.split(/\t|,|\s{2,}/).map(s=>s.trim()).filter(s=>s);
+  const firstParts=splitLine(lines[0]);
+  // Detect if first row is headers (contains any letter)
+  let dbhCol=0,htCol=1,startRow=0;
+  const hasHeaders=firstParts.some(h=>/[a-z]/i.test(h));
+  if(hasHeaders){
+    startRow=1;
+    firstParts.forEach((h,i)=>{
+      const u=h.toUpperCase().replace(/[\s_]+/g,"");
+      if(u==="DBH"||u==="DIA"||u==="DIAMETER")dbhCol=i;
+      const htType=document.getElementById("qpHtType").value;
+      if(htType==="total"){
+        if(u==="TOTALHT"||u==="THT"||u==="HEIGHT"||u==="HT"||u==="TOTALHEIGHT"||u==="TREEHT")htCol=i;
+      }else{
+        if(u==="MERCHHT"||u==="MHT"||u==="MERCHHEIGHT"||u==="STOPHTSOLID")htCol=i;
+      }
+    });
+  }
+  const pairs=[];
+  for(let i=startRow;i<lines.length;i++){
+    const parts=splitLine(lines[i]);
+    if(parts.length<2)continue;
+    const dbh=parseFloat(parts[dbhCol]);
+    const ht=parseFloat(parts[htCol]);
+    if(!isNaN(dbh)&&dbh>0){
+      pairs.push({dbh,ht:(!isNaN(ht)&&ht>0)?ht:0});
+    }
+  }
+  return pairs;
+}
+function qpReRun(){
+  const pairs=qpParseData();
+  const measured=pairs.filter(p=>p.ht>0);
+  const zeros=pairs.filter(p=>p.ht===0);
+  document.getElementById("qpDataSum").innerHTML=pairs.length+" trees, <span style='color:var(--tht)'>"+measured.length+" with heights</span>, <span style='color:var(--txM)'>"+zeros.length+" without</span>";
+  qpPts=measured;
+  qpReg=runReg(measured.map(p=>({dbh:p.dbh,ht:p.ht})));
+  qpRenderStats();qpRenderChart();qpSingle();qpBatch();
+}
+function qpRenderStats(){
+  const div=document.getElementById("qpRegStats");
+  if(!qpReg){div.innerHTML='<div style="color:var(--txM);font-size:11px">Need at least 3 measured trees.</div>';return;}
+  const lbl=document.getElementById("qpHtType").value==="total"?"TOTAL HEIGHT":"MERCH HEIGHT";
+  div.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--txM);margin-bottom:10px">${lbl} REGRESSION (n=${qpReg.n})</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <div style="background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--bdr);flex:1"><div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">Y-INTERCEPT (a)</div><div style="font-size:13px;font-weight:600;color:var(--txB)">${qpReg.a.toFixed(8)}</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--bdr);flex:1"><div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">COEF_OF_X (b)</div><div style="font-size:13px;font-weight:600;color:var(--txB)">${qpReg.b.toFixed(8)}</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--bdr);flex:1"><div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">R&sup2;</div><div style="font-size:13px;font-weight:600;color:${qpReg.r2>0.7?"var(--tht)":"var(--dng)"}">${qpReg.r2.toFixed(4)}</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--bdr);flex:1"><div style="font-size:9px;font-weight:600;color:var(--txM);margin-bottom:4px">STD ERROR</div><div style="font-size:13px;font-weight:600;color:var(--txB)">${qpReg.se.toFixed(4)}</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--txM)">Ht = exp(${qpReg.a.toFixed(4)} + ${qpReg.b.toFixed(4)} / DBH)</div>`;
+}
+function qpSingle(){
+  const dbh=parseFloat(document.getElementById("qpDBH").value);
+  const div=document.getElementById("qpSingleResult");
+  if(!qpReg){div.innerHTML='<div style="color:var(--txM);font-size:11px">No regression</div>';return;}
+  if(!dbh||dbh<=0){div.innerHTML='<div style="color:var(--txM);font-size:11px">Enter DBH</div>';return;}
+  const ht=predict(qpReg,dbh);
+  const lbl=document.getElementById("qpHtType").value==="total"?"TOTAL HT":"MERCH HT";
+  const clr=document.getElementById("qpHtType").value==="total"?"var(--tht)":"var(--mht)";
+  div.innerHTML=`<div style="font-size:9px;color:var(--txM);margin-bottom:2px">${lbl}</div><div style="font-size:36px;font-weight:700;color:${clr}">${ht.toFixed(2)}</div>`;
+  qpRenderChart();
+}
+function qpBatch(){
+  const text=document.getElementById("qpBatchIn").value.trim();
+  const div=document.getElementById("qpBatchOut");
+  const btn=document.getElementById("qpCopyBtn");
+  if(!qpReg||!text){div.innerHTML="";btn.style.display="none";return;}
+  const dbhs=text.split(/[\n,]+/).map(s=>parseFloat(s.trim())).filter(d=>d>0);
+  if(!dbhs.length){div.innerHTML="";btn.style.display="none";return;}
+  const lbl=document.getElementById("qpHtType").value==="total"?"Total Ht":"Merch Ht";
+  const clr=document.getElementById("qpHtType").value==="total"?"var(--tht)":"var(--mht)";
+  let html='<table><thead><tr><th>DBH</th><th style="color:'+clr+'">'+lbl+'</th></tr></thead><tbody>';
+  dbhs.forEach(dbh=>{html+=`<tr><td>${dbh}</td><td style="color:${clr};font-weight:600">${predict(qpReg,dbh).toFixed(2)}</td></tr>`;});
+  html+='</tbody></table>';div.innerHTML=html;btn.style.display="block";
+}
+function qpCopyBatch(){
+  if(!qpReg)return;
+  const text=document.getElementById("qpBatchIn").value.trim();
+  const dbhs=text.split(/[\n,]+/).map(s=>parseFloat(s.trim())).filter(d=>d>0);
+  const lbl=document.getElementById("qpHtType").value==="total"?"TotalHt":"MerchHt";
+  let tsv="DBH\t"+lbl+"\n";
+  dbhs.forEach(dbh=>{tsv+=dbh+"\t"+predict(qpReg,dbh).toFixed(2)+"\n";});
+  navigator.clipboard.writeText(tsv).then(()=>{
+    const btn=document.getElementById("qpCopyBtn");btn.textContent="Copied!";setTimeout(()=>{btn.textContent="Copy to Clipboard";},1500);
+  });
+}
+function qpRenderChart(){
+  const div=document.getElementById("qpChart");
+  if(!qpReg||!qpPts.length){div.innerHTML="";return;}
+  const W=500,H=200,P={t:14,r:14,b:36,l:44};
+  const xs=qpPts.map(d=>d.dbh),ys=qpPts.map(d=>d.ht);
+  const x0=Math.max(0,Math.floor(Math.min(...xs)-1)),x1=Math.ceil(Math.max(...xs)+1);
+  const y0=Math.max(0,Math.floor(Math.min(...ys)-5)),y1=Math.ceil(Math.max(...ys)+5);
+  const xS=v=>P.l+((v-x0)/(x1-x0))*(W-P.l-P.r);
+  const yS=v=>H-P.b-((v-y0)/(y1-y0))*(H-P.t-P.b);
+  const clr=document.getElementById("qpHtType").value==="total"?"var(--tht)":"var(--mht)";
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%"><rect x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="rgba(0,0,0,0.15)" rx="2"/>`;
+  for(let i=0;i<5;i++){const yv=y0+(i/4)*(y1-y0);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yS(yv)}" y2="${yS(yv)}" stroke="rgba(255,255,255,0.06)"/><text x="${P.l-4}" y="${yS(yv)+3}" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.35)" font-family="inherit">${Math.round(yv)}</text>`;}
+  for(let i=0;i<5;i++){const xv=x0+(i/4)*(x1-x0);s+=`<text x="${xS(xv)}" y="${H-P.b+12}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.35)" font-family="inherit">${xv.toFixed(0)}</text>`;}
+  s+=`<text x="${W/2}" y="${H-4}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.45)" font-family="inherit" font-weight="600">DBH</text>`;
+  s+=`<text x="8" y="${H/2}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.45)" font-family="inherit" font-weight="600" transform="rotate(-90,8,${H/2})">Height</text>`;
+  const pts=[];for(let x=Math.max(x0,1);x<=x1;x+=0.25){const y=predict(qpReg,x);if(y>=y0-5&&y<=y1+5)pts.push(`${xS(x).toFixed(1)},${yS(y).toFixed(1)}`);}
+  if(pts.length>1)s+=`<polyline points="${pts.join(" ")}" fill="none" stroke="${clr}" stroke-width="2" opacity="0.75"/>`;
+  qpPts.forEach(d=>{s+=`<circle cx="${xS(d.dbh)}" cy="${yS(d.ht)}" r="3" fill="${clr}" opacity="0.6" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>`;});
+  const predDBH=parseFloat(document.getElementById("qpDBH").value);
+  if(predDBH>0){const ph=predict(qpReg,predDBH);if(ph>=y0&&ph<=y1&&predDBH>=x0&&predDBH<=x1){s+=`<circle cx="${xS(predDBH)}" cy="${yS(ph)}" r="6" fill="none" stroke="#fff" stroke-width="2"/><circle cx="${xS(predDBH)}" cy="${yS(ph)}" r="6" fill="none" stroke="${clr}" stroke-width="1" stroke-dasharray="2,2"/>`;}}
+  s+='</svg>';div.innerHTML=s;
+}
+ 
 function expCharts(){
   const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);const rc=bRC();
   let html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Height Regression Charts</title>';
@@ -957,6 +1171,94 @@ function makeChartPrint(data,reg,label,color){
   data.forEach(d=>{s+='<circle cx="'+xS(d.dbh)+'" cy="'+yS(d.ht)+'" r="3.5" fill="'+color+'" opacity="0.5" stroke="#fff" stroke-width="0.5"/>';});
   return s+'</svg>';
 }
+// ═══════════════════════ QUICK PREDICT ═══════════════════════
+function togglePredict(){
+  const p=document.getElementById("predictPanel");
+  const vis=p.style.display!=="none";
+  p.style.display=vis?"none":"block";
+  if(!vis)populatePredCC();
+}
+function populatePredCC(){
+  const sm=sMap();const sc=(a,b)=>CC.indexOf(a)-CC.indexOf(b);
+  const dd=document.getElementById("predCC");
+  let html="";
+  // Add all THT regression groups
+  Object.keys(thtR).sort(sc).forEach(cc=>{
+    html+=`<option value="${cc}">${cc} - ${sm[cc]||""} (THT n=${thtR[cc].n})</option>`;
+  });
+  dd.innerHTML=html;
+  quickPredict();
+}
+function quickPredict(){
+  const cc=document.getElementById("predCC").value;
+  const dbh=parseFloat(document.getElementById("predDBH").value);
+  const div=document.getElementById("predResults");
+  if(!cc||!dbh||dbh<=0){div.innerHTML='<div style="color:var(--txM);font-size:11px">Enter a DBH to see predicted heights.</div>';return;}
+  let html='<div style="display:flex;gap:16px">';
+  // THT
+  if(thtR[cc]){
+    const ht=predict(thtR[cc],dbh);
+    html+=`<div style="flex:1;background:var(--bg);border-radius:6px;padding:10px;border:1px solid var(--bdr)">
+      <div style="font-size:9px;color:var(--txM);margin-bottom:4px">TOTAL HEIGHT</div>
+      <div style="font-size:20px;font-weight:700;color:var(--tht)">${ht.toFixed(2)}</div>
+      <div style="font-size:9px;color:var(--txM);margin-top:4px">R²=${thtR[cc].r2.toFixed(4)} n=${thtR[cc].n}</div>
+    </div>`;
+  }
+  // MHT
+  if(mhtR[cc]){
+    const ht=predict(mhtR[cc],dbh);
+    html+=`<div style="flex:1;background:var(--bg);border-radius:6px;padding:10px;border:1px solid var(--bdr)">
+      <div style="font-size:9px;color:var(--txM);margin-bottom:4px">MERCH HEIGHT</div>
+      <div style="font-size:20px;font-weight:700;color:var(--mht)">${ht.toFixed(2)}</div>
+      <div style="font-size:9px;color:var(--txM);margin-top:4px">R²=${mhtR[cc].r2.toFixed(4)} n=${mhtR[cc].n}</div>
+    </div>`;
+  }else{
+    html+=`<div style="flex:1;background:var(--bg);border-radius:6px;padding:10px;border:1px solid var(--bdr)">
+      <div style="font-size:9px;color:var(--txM)">MERCH HEIGHT</div>
+      <div style="font-size:12px;color:var(--txM);margin-top:4px">No MHT regression</div>
+    </div>`;
+  }
+  html+='</div>';
+  div.innerHTML=html;
+}
+function batchPredict(){
+  const cc=document.getElementById("predCC").value;
+  const text=document.getElementById("batchDBH").value.trim();
+  const div=document.getElementById("batchResults");
+  if(!cc||!text){div.innerHTML="";return;}
+  const dbhs=text.split(/[\n,]+/).map(s=>parseFloat(s.trim())).filter(d=>d>0);
+  if(!dbhs.length){div.innerHTML="";return;}
+  let html='<table style="width:100%;font-size:10px"><thead><tr><th style="padding:4px 8px;border-bottom:1px solid var(--bdr);color:var(--txM)">DBH</th><th style="padding:4px 8px;border-bottom:1px solid var(--bdr);color:var(--tht)">THT</th>';
+  if(mhtR[cc])html+='<th style="padding:4px 8px;border-bottom:1px solid var(--bdr);color:var(--mht)">MHT</th>';
+  html+='</tr></thead><tbody>';
+  dbhs.forEach(dbh=>{
+    const tht=thtR[cc]?predict(thtR[cc],dbh).toFixed(2):"";
+    const mht=mhtR[cc]?predict(mhtR[cc],dbh).toFixed(2):"";
+    html+=`<tr><td style="padding:3px 8px;border-bottom:1px solid rgba(37,48,40,0.3)">${dbh}</td><td style="padding:3px 8px;border-bottom:1px solid rgba(37,48,40,0.3);color:var(--tht);font-weight:600">${tht}</td>`;
+    if(mhtR[cc])html+=`<td style="padding:3px 8px;border-bottom:1px solid rgba(37,48,40,0.3);color:var(--mht);font-weight:600">${mht}</td>`;
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  // Copy button
+  html+=`<button class="bs" onclick="copyBatch()" style="margin-top:8px;padding:4px 10px;font-size:9px;width:100%">Copy to Clipboard</button>`;
+  div.innerHTML=html;
+}
+function copyBatch(){
+  const cc=document.getElementById("predCC").value;
+  const text=document.getElementById("batchDBH").value.trim();
+  if(!cc||!text)return;
+  const dbhs=text.split(/[\n,]+/).map(s=>parseFloat(s.trim())).filter(d=>d>0);
+  let tsv="DBH\tTotalHt"+(mhtR[cc]?"\tMerchHt":"")+"\n";
+  dbhs.forEach(dbh=>{
+    const tht=thtR[cc]?predict(thtR[cc],dbh).toFixed(2):"";
+    const mht=mhtR[cc]?predict(mhtR[cc],dbh).toFixed(2):"";
+    tsv+=dbh+"\t"+tht+(mhtR[cc]?"\t"+mht:"")+"\n";
+  });
+  navigator.clipboard.writeText(tsv).then(()=>{
+    const btn=document.querySelector("#batchResults button");
+    if(btn){btn.textContent="Copied!";setTimeout(()=>{btn.textContent="Copy to Clipboard";},1500);}
+  });
+}
 function expTrees2(){
   if(!origT2||!origT2.length){sErr("No Trees2 data available. Use Paste or Separate import mode.");return;}
   const wb=XLSX.utils.book_new();
@@ -967,3 +1269,4 @@ function expTrees2(){
 }
 </script>
 </body></html>
+ 
